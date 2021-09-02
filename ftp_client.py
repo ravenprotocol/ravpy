@@ -17,3 +17,8 @@ class FTPClient:
     def close(self):
         self.ftp.quit()
 
+# ftp_client = FTPClient('0.0.0.0', 'user', 'password')
+# ftp_client.list_server_files()
+# ftp_client.upload('model/local.h5','local2.h5')
+# # ftp_client.download('model/global.h5','global.h5')
+# ftp_client.close()
