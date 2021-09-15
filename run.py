@@ -1,13 +1,11 @@
 from ftp_client import FTPClient
 import socketio
 import time
-# from KerasModel import train_local
 
 sio = socketio.Client()
 
 client_status = {}
 epoch = 0
-
 
 ftp_client = FTPClient('0.0.0.0', 'menon_uk1998', 'raven')
 print(ftp_client.list_server_files())
@@ -39,10 +37,10 @@ def server_payload(payload=None):
             'operator': payload["operator"],
             "op_id": payload["op_id"],
             "status": "computed"})
+        
         # ftp_client.download('model/global.h5','global.h5')
-        # ftp_client.upload('model/local.h5','collected_model/local2.h5')
-        ftp_client.upload('model/local.h5','raven_federated/collected_model/local2.h5')
-        ftp_client.close()
+        ftp_client.upload('model/local.h5','collected_model/local{}.h5'.format(payload['op_id']))
+        # ftp_client.close()
 
         sio.emit("op_completed", {
             'op_type': payload["op_type"],
