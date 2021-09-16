@@ -1,6 +1,22 @@
 import numpy as np
 from tensorflow import keras
 from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.optimizers import SGD
+from tensorflow.keras.layers import Activation,Dense
+import os
+
+class SimpleMLP:
+    @staticmethod
+    def build(shape, classes):
+        model = Sequential()
+        model.add(Dense(200, input_shape=(shape,)))
+        model.add(Activation("relu"))
+        model.add(Dense(200))
+        model.add(Activation("relu"))
+        model.add(Dense(classes))
+        model.add(Activation("softmax"))
+        return model
 
 def train_local(local_epochs=5):
 
@@ -22,9 +38,28 @@ def train_local(local_epochs=5):
 
     batch_size = 32
 
-    local_model = keras.models.load_model('model/local.h5')
-    weights = local_model.get_weights()
-    local_model.set_weights(weights)
+    if len(os.listdir('model')) == 0:
+        print("No Model Found. Initializing...")
+        lr = 0.01
+        total_comms_round = 100
+        loss='categorical_crossentropy'
+        metrics = ['accuracy']
+        optimizer = SGD(lr=lr,
+                        decay=lr / total_comms_round,
+                        momentum=0.9
+                       )
+
+        smlp_local = SimpleMLP()
+        local_model = smlp_local.build(784, 10)
+        local_model.compile(loss=loss, 
+                        optimizer=optimizer, 
+                        metrics=metrics)
+
+    else:    
+        local_model = keras.models.load_model('model/local.h5')
+        weights = local_model.get_weights()
+        local_model.set_weights(weights)
+            
 
     x = np.array(x_train)
     y = np.array(y_train)
