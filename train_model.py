@@ -44,7 +44,7 @@ def train_local(local_epochs=5):
         total_comms_round = 100
         loss='categorical_crossentropy'
         metrics = ['accuracy']
-        optimizer = SGD(lr=lr,
+        optimizer = SGD(learning_rate=lr,
                         decay=lr / total_comms_round,
                         momentum=0.9
                        )
