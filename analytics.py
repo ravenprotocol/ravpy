@@ -19,6 +19,7 @@ params = {  'size': len(data_silo),
             }
 
 print(data_silo)
+print(params)
 
 @sio.event
 def connect():
