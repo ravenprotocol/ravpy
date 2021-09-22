@@ -29,26 +29,26 @@ def server_payload(payload=None):
         x = payload["values"][0];
         result = x
         print(type(result))
-
+        
         print(result,{
             'op_type': payload["op_type"],
             'result': result,
             'values': payload["values"],
             'operator': payload["operator"],
             "op_id": payload["op_id"],
-            "status": "computed"})
+            "status": "success"})
         
         # ftp_client.download('model/global.h5','global.h5')
         ftp_client.upload('model/local.h5','collected_model/local{}.h5'.format(payload['op_id']))
         # ftp_client.close()
-
+        time.sleep(20)
         sio.emit("op_completed", {
             'op_type': payload["op_type"],
             'result': result,
             'values': payload["values"],
             'operator': payload["operator"],
             "op_id": payload["op_id"],
-            "status": "computed"
+            "status": "success"
         }, namespace='/raven-federated')
     
     
@@ -59,5 +59,5 @@ def transmit_data():
         sio.emit('client_status', client_status, namespace='/raven-federated', callback=server_payload)
         sio.sleep(10)
     
-sio.connect('http://localhost:9999', namespaces=['/raven-federated'])
+sio.connect('http://localhost:9999', headers={'client_name':'raven-federated'}, namespaces=['/raven-federated'])
 sio.wait()
