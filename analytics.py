@@ -5,8 +5,16 @@ sio = socketio.Client()
 
 data_silo = [random.randint(1,100) for _ in range(random.randint(1,10))]
 avg = sum(data_silo)/len(data_silo)
-print(avg)
-params = {'Average':avg}
+
+min_val = min(data_silo)
+max_val = max(data_silo)
+
+params = {'Average':avg,
+            'Minimum':min_val,
+            'Maximum':max_val
+            }
+
+print(data_silo)
 
 @sio.event
 def connect():
