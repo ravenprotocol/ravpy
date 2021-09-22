@@ -9,9 +9,13 @@ avg = sum(data_silo)/len(data_silo)
 min_val = min(data_silo)
 max_val = max(data_silo)
 
-params = {'Average':avg,
+variance = sum((i - avg) ** 2 for i in data_silo) / len(data_silo)
+
+params = {  'size': len(data_silo),
+            'Average':avg,
             'Minimum':min_val,
-            'Maximum':max_val
+            'Maximum':max_val,
+            'Variance':variance
             }
 
 print(data_silo)
