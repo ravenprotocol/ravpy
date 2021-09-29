@@ -30,11 +30,24 @@ def connect():
 def disconnect():
     print('Disconnected from server')
 
+ckks_context = None
+
+@sio.event(namespace='/analytics')
+def get_context_vector(context=None):
+    global ckks_context
+    ckks_context = context
+    print('Received context vector:', ckks_context)
+
 @sio.event(namespace='/analytics')
 def transmit_params():
-    for i in range(2):
-        sio.emit('fed_analytics', params, namespace='/analytics')
+    global ckks_context
+    print('Handshake...')
+    while ckks_context is None:
+        sio.emit('handshake', {}, namespace='/analytics', callback=get_context_vector)    
         sio.sleep(5)
+    print('Emitting')
+    sio.emit('fed_analytics', params, namespace='/analytics')
+    sio.sleep(5)
         
 sio.connect('http://localhost:9999', headers={'client_name':'analytics'}, namespaces=['/analytics'])
 sio.wait()
