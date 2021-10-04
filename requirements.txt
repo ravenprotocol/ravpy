@@ -75,3 +75,4 @@ Werkzeug==2.0.1
 yarg==0.1.9
 yarl==1.6.3
 zipp==3.5.0
+tenseal
