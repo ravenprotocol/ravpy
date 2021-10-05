@@ -1,4 +1,8 @@
 import ast
+import atexit
+import signal
+import sys
+from argparse import ArgumentParser
 
 import numpy as np
 import socketio
@@ -6,7 +10,7 @@ import tenseal as ts
 
 sio = socketio.Client()
 
-data_silo = [26, 45, 67]
+data_silo = [4,5]
 avg = sum(data_silo) / len(data_silo)
 
 min_val = min(data_silo)
@@ -37,10 +41,45 @@ def analyze_data(data):
         return {"rank": rank, "dtype": np.array(data).dtype.__class__.__name__}
 
 
+def wait_for_objective():
+    while objective is None:
+        if sio.connected:
+            sio.emit('handshake', {}, namespace='/analytics', callback=receive_objective)
+            sio.sleep(5)
+
+
+def transmit_params():
+    print(sio.connected)
+    global objective
+    print('Performing Handshake')
+
+    wait_for_objective()
+
+    # print('Encrypting params...')
+    # print(len(ts.ckks_tensor(ckks_context, params['size']).serialize()))
+    # # params['size'] = ts.ckks_tensor(ckks_context, params['size']).serialize()
+    # # params['Average'] = ts.ckks_tensor(ckks_context, params['Average']).serialize()
+    # # params['Minimum'] = ts.ckks_tensor(ckks_context, params['Minimum']).serialize()
+    # # params['Maximum'] = ts.ckks_tensor(ckks_context, params['Maximum']).serialize()
+    # # params['Variance'] = ts.ckks_tensor(ckks_context, params['Variance']).serialize()
+    #
+    # # print('Emitting', params)
+    # bb = ts.ckks_tensor(ckks_context, params['size']).serialize()
+    # print(len(bb))
+    # sio.emit('receive_params', {"size": bb}, namespace='/analytics')
+    # sio.sleep(5)
+    # sio.emit('receive_params', {"Average": ts.ckks_tensor(ckks_context, params['Average']).serialize()}, namespace='/analytics')
+    # sio.sleep(5)
+    # sio.emit('receive_params', {"Minimum": ts.ckks_tensor(ckks_context, params['Minimum']).serialize()}, namespace='/analytics')
+    # sio.sleep(5)
+    # sio.emit('receive_params', {"Maximum": ts.ckks_tensor(ckks_context, params['Maximum']).serialize()}, namespace='/analytics')
+    # sio.emit('receive_params', {"Variance": ts.ckks_tensor(ckks_context, params['Variance']).serialize()}, namespace='/analytics')
+
+
+
 @sio.event
 def connect():
     print('Connected to server')
-    sio.start_background_task(transmit_params)
 
 
 @sio.event
@@ -109,6 +148,7 @@ def cal_params():
     print('Encrypting params...')
     print(params['mean'])
     params["objective_id"] = objective["id"]
+    params["size"] = len(data_silo)
     # bb = ts.ckks_tensor(ckks_context, [params['mean']]).serialize()
     # print(len(bb))
     sio.emit('receive_params', params, namespace='/analytics')
@@ -119,39 +159,21 @@ def cal_params():
     wait_for_objective()
 
 
-def wait_for_objective():
-    while objective is None:
-        sio.emit('handshake', {}, namespace='/analytics', callback=receive_objective)
-        sio.sleep(5)
+def sigint_handler(signal, frame):
+    print('exit')
+    sio.emit("disconnect", {}, namespace="/analytics")
+    sio.disconnect()
+    sio.sleep(1)
+    sys.exit(0)
 
 
-@sio.event(namespace='/analytics')
-def transmit_params():
-    global objective
-    print('Performing Handshake')
-
-    wait_for_objective()
-
-    # print('Encrypting params...')
-    # print(len(ts.ckks_tensor(ckks_context, params['size']).serialize()))
-    # # params['size'] = ts.ckks_tensor(ckks_context, params['size']).serialize()
-    # # params['Average'] = ts.ckks_tensor(ckks_context, params['Average']).serialize()
-    # # params['Minimum'] = ts.ckks_tensor(ckks_context, params['Minimum']).serialize()
-    # # params['Maximum'] = ts.ckks_tensor(ckks_context, params['Maximum']).serialize()
-    # # params['Variance'] = ts.ckks_tensor(ckks_context, params['Variance']).serialize()
-    #
-    # # print('Emitting', params)
-    # bb = ts.ckks_tensor(ckks_context, params['size']).serialize()
-    # print(len(bb))
-    # sio.emit('receive_params', {"size": bb}, namespace='/analytics')
-    # sio.sleep(5)
-    # sio.emit('receive_params', {"Average": ts.ckks_tensor(ckks_context, params['Average']).serialize()}, namespace='/analytics')
-    # sio.sleep(5)
-    # sio.emit('receive_params', {"Minimum": ts.ckks_tensor(ckks_context, params['Minimum']).serialize()}, namespace='/analytics')
-    # sio.sleep(5)
-    # sio.emit('receive_params', {"Maximum": ts.ckks_tensor(ckks_context, params['Maximum']).serialize()}, namespace='/analytics')
-    # sio.emit('receive_params', {"Variance": ts.ckks_tensor(ckks_context, params['Variance']).serialize()}, namespace='/analytics')
+signal.signal(signal.SIGINT, sigint_handler)
 
 
-sio.connect('http://localhost:9999?client_name=analytics&client_id=8888888888', headers={'client_name': 'analytics', "client_id": "8888888888"}, namespaces=['/analytics'])
-sio.wait()
+if __name__ == '__main__':
+    argparser = ArgumentParser()
+    argparser.add_argument("--cid", type=str, help="Enter client id")
+    sio = socketio.Client()
+
+    sio.connect('http://localhost:9999?type=analytics&cid={}'.format(argparser.parse_args().cid), namespaces=['/analytics'])
+    t = sio.start_background_task(transmit_params)
