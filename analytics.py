@@ -10,24 +10,24 @@ import tenseal as ts
 
 sio = socketio.Client()
 
-data_silo = [4,5]
-avg = sum(data_silo) / len(data_silo)
-
-min_val = min(data_silo)
-max_val = max(data_silo)
-
-variance = sum((i - avg) ** 2 for i in data_silo) / len(data_silo)
-
+data_silo = None
+# avg = sum(data_silo) / len(data_silo)
+#
+# min_val = min(data_silo)
+# max_val = max(data_silo)
+#
+# variance = sum((i - avg) ** 2 for i in data_silo) / len(data_silo)
+#
 objective = None
-params = {'size': [len(data_silo)],
-          'Average': [avg],
-          'Minimum': [min_val],
-          'Maximum': [max_val],
-          'Variance': [variance]
-          }
-
-print(data_silo)
-print(params)
+# params = {'size': [len(data_silo)],
+#           'Average': [avg],
+#           'Minimum': [min_val],
+#           'Maximum': [max_val],
+#           'Variance': [variance]
+#           }
+#
+# print(data_silo)
+# print(params)
 
 
 def analyze_data(data):
@@ -136,19 +136,31 @@ def cal_params():
     global objective
     params = dict()
 
-    if objective["operator"] == "mean":
-        rank = len(np.array(data_silo).shape)
+    rank = len(np.array(data_silo).shape)
 
-        if rank == 0:
-            # TODO: Apply differential privacy
-            params["mean"] = data_silo
-        elif rank == 1:
+    if rank == 0:
+        # TODO: Apply differential privacy
+        params["mean"] = data_silo
+    elif rank == 1:
+        if objective["operator"] == "mean":
             params["mean"] = sum(data_silo) / len(data_silo)
+        elif objective['operator'] == "variance":
+            mean = sum(data_silo) / len(data_silo)
+            params['mean'] = mean
+            params['variance'] = sum((i - mean) ** 2 for i in data_silo) / len(data_silo)
+        elif objective['operator'] == "standard_deviation":
+            mean = sum(data_silo) / len(data_silo)
+            params['mean'] = mean
+            variance = sum((i - mean) ** 2 for i in data_silo) / len(data_silo)
+            params['variance'] = variance
+            params['standard_deviation'] = np.sqrt(variance)
 
     print('Encrypting params...')
-    print(params['mean'])
+    print(params)
     params["objective_id"] = objective["id"]
     params["size"] = len(data_silo)
+    params["maximum"] = max(data_silo)
+    params["minimum"] = min(data_silo)
     # bb = ts.ckks_tensor(ckks_context, [params['mean']]).serialize()
     # print(len(bb))
     sio.emit('receive_params', params, namespace='/analytics')
@@ -173,7 +185,13 @@ signal.signal(signal.SIGINT, sigint_handler)
 if __name__ == '__main__':
     argparser = ArgumentParser()
     argparser.add_argument("--cid", type=str, help="Enter client id")
+    argparser.add_argument("--data", type=str, help="Enter data")
     sio = socketio.Client()
+
+    args = argparser.parse_args()
+    data = args.data
+
+    data_silo = [int(a) for a in data.split(",")]
 
     sio.connect('http://localhost:9999?type=analytics&cid={}'.format(argparser.parse_args().cid), namespaces=['/analytics'])
     t = sio.start_background_task(transmit_params)
