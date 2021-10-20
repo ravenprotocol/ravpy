@@ -1,16 +1,25 @@
 import ast
-import atexit
+import asyncio
+import functools
+import logging
+import os
+import pickle
 import signal
 import sys
-from argparse import ArgumentParser
-
 import numpy as np
 import socketio
 import tenseal as ts
 
-sio = socketio.Client()
+from config import CONTEXT_FOLDER, PARAMS_DIR
+from ftp_client import get_client
+from helpers import load_context
 
-data_silo = None
+logger = logging.getLogger(__name__)
+
+sio = socketio.AsyncClient(logger=True, engineio_logger=True)
+client = None
+data_silo = [1, 2, 3]
+cid = None
 # avg = sum(data_silo) / len(data_silo)
 #
 # min_val = min(data_silo)
@@ -19,6 +28,8 @@ data_silo = None
 # variance = sum((i - avg) ** 2 for i in data_silo) / len(data_silo)
 #
 objective = None
+
+
 # params = {'size': [len(data_silo)],
 #           'Average': [avg],
 #           'Minimum': [min_val],
@@ -28,6 +39,59 @@ objective = None
 #
 # print(data_silo)
 # print(params)
+
+
+@sio.event
+async def connect():
+    print('Connected to server')
+
+
+@sio.event
+async def disconnect():
+    print('Disconnected from server')
+
+
+def check_compatibility(data, obj):
+    rules = ast.literal_eval(obj["rules"])
+    props = analyze_data(data)
+
+    if rules['lower-limit'] < props['min'] and rules['upper-limit'] > props['max']:
+        return True
+    else:
+        return False
+
+
+@sio.on("receive_objective", namespace='/analytics')
+async def receive_objective(obj=None):
+    global objective
+    global ckks_context
+
+    print("receive_objective")
+
+    if obj is not None:
+        objective = obj
+        print(objective)
+        # Check compatibility here
+        if check_compatibility(data=data_silo, obj=obj):
+
+            print("", objective['ftp_credentials'])
+            ftp_client = get_client(**ast.literal_eval(objective['ftp_credentials']))
+
+            print(ftp_client, os.path.join(CONTEXT_FOLDER, objective['context_filename']), objective['context_filename'])
+
+            ftp_client.download(os.path.join(CONTEXT_FOLDER, "f_"+objective['context_filename']),
+                                objective['context_filename'])
+
+            await sio.sleep(10)
+            print(os.path.join(CONTEXT_FOLDER, objective['context_filename']))
+            ckks_context = load_context(os.path.join(CONTEXT_FOLDER, objective['context_filename']))
+
+            if ckks_context is not None:
+                await cal_params(ftp_client)
+        else:
+            print("Your data is not compatible")
+    else:
+        print("Obj is none")
 
 
 def analyze_data(data):
@@ -41,157 +105,121 @@ def analyze_data(data):
         return {"rank": rank, "dtype": np.array(data).dtype.__class__.__name__}
 
 
-def wait_for_objective():
+async def wait_for_objective():
     while objective is None:
         if sio.connected:
-            sio.emit('handshake', {}, namespace='/analytics', callback=receive_objective)
-            sio.sleep(5)
+            await sio.emit('handshake', {}, namespace='/analytics')
+            await sio.sleep(10)
 
 
-def transmit_params():
-    print(sio.connected)
-    global objective
-    print('Performing Handshake')
-
-    wait_for_objective()
-
-    # print('Encrypting params...')
-    # print(len(ts.ckks_tensor(ckks_context, params['size']).serialize()))
-    # # params['size'] = ts.ckks_tensor(ckks_context, params['size']).serialize()
-    # # params['Average'] = ts.ckks_tensor(ckks_context, params['Average']).serialize()
-    # # params['Minimum'] = ts.ckks_tensor(ckks_context, params['Minimum']).serialize()
-    # # params['Maximum'] = ts.ckks_tensor(ckks_context, params['Maximum']).serialize()
-    # # params['Variance'] = ts.ckks_tensor(ckks_context, params['Variance']).serialize()
-    #
-    # # print('Emitting', params)
-    # bb = ts.ckks_tensor(ckks_context, params['size']).serialize()
-    # print(len(bb))
-    # sio.emit('receive_params', {"size": bb}, namespace='/analytics')
-    # sio.sleep(5)
-    # sio.emit('receive_params', {"Average": ts.ckks_tensor(ckks_context, params['Average']).serialize()}, namespace='/analytics')
-    # sio.sleep(5)
-    # sio.emit('receive_params', {"Minimum": ts.ckks_tensor(ckks_context, params['Minimum']).serialize()}, namespace='/analytics')
-    # sio.sleep(5)
-    # sio.emit('receive_params', {"Maximum": ts.ckks_tensor(ckks_context, params['Maximum']).serialize()}, namespace='/analytics')
-    # sio.emit('receive_params', {"Variance": ts.ckks_tensor(ckks_context, params['Variance']).serialize()}, namespace='/analytics')
-
-
-
-@sio.event
-def connect():
-    print('Connected to server')
-
-
-@sio.event
-def disconnect():
-    print('Disconnected from server')
-
-
-ckks_context = None
-
-
-def check_compatibility(data, obj):
-    rules = ast.literal_eval(obj["rules"])
-    props = analyze_data(data)
-
-    if rules['lower-limit'] < props['min'] and rules['upper-limit'] > props['max']:
-        return True
-    else:
-        return False
-
-
-@sio.event(namespace='/analytics')
-def receive_objective(obj=None):
-    global objective
-
-    if obj is not None:
-        objective = obj
-        print(objective)
-        # Check compatibility here
-        if check_compatibility(data=data_silo, obj=obj):
-            if ckks_context is None:
-                while ckks_context is None:
-                    sio.emit('context_vector', {}, namespace='/analytics', callback=receive_context_vector)
-                    sio.sleep(5)
-            else:
-                cal_params()
-        else:
-            print("Your data is not compatible")
-    else:
-        print("Obj is none")
-
-
-@sio.event(namespace='/analytics')
-def receive_context_vector(context=None):
-    global ckks_context
-    global objective
-    ckks_context = ts.context_from(context)
-    print('Received context vector:', ckks_context)
-
-    if ckks_context is not None:
-        cal_params()
-
-
-def cal_params():
+async def cal_params(ftp_client):
     global objective
     params = dict()
-
+    encryption = objective.get("encryption", True)
     rank = len(np.array(data_silo).shape)
+
+    mean = None
+    variance = None
+    standard_deviation = None
+    size = len(data_silo)
+    maximum = max(data_silo)
+    minimum = min(data_silo)
 
     if rank == 0:
         # TODO: Apply differential privacy
-        params["mean"] = data_silo
+        mean = data_silo
     elif rank == 1:
         if objective["operator"] == "mean":
-            params["mean"] = sum(data_silo) / len(data_silo)
+            mean = sum(data_silo) / len(data_silo)
         elif objective['operator'] == "variance":
             mean = sum(data_silo) / len(data_silo)
-            params['mean'] = mean
-            params['variance'] = sum((i - mean) ** 2 for i in data_silo) / len(data_silo)
+            variance = sum((i - mean) ** 2 for i in data_silo) / len(data_silo)
         elif objective['operator'] == "standard_deviation":
             mean = sum(data_silo) / len(data_silo)
-            params['mean'] = mean
             variance = sum((i - mean) ** 2 for i in data_silo) / len(data_silo)
-            params['variance'] = variance
-            params['standard_deviation'] = np.sqrt(variance)
+            standard_deviation = np.sqrt(variance)
 
-    print('Encrypting params...')
-    print(params)
+    if encryption:
+        print('Encrypting params...')
+        mean = ts.ckks_tensor(ckks_context, [mean]).serialize()
+        variance = ts.ckks_tensor(ckks_context, [variance]).serialize()
+        standard_deviation = ts.ckks_tensor(ckks_context, [standard_deviation]).serialize()
+        size = ts.ckks_tensor(ckks_context, [size]).serialize()
+        minimum = ts.ckks_tensor(ckks_context, [minimum]).serialize()
+        maximum = ts.ckks_tensor(ckks_context, [maximum]).serialize()
+
+    params["mean"] = mean
+    params["variance"] = variance
+    params["standard_deviation"] = standard_deviation
+    params["size"] = size
+    params["minimum"] = minimum
+    params["maximum"] = maximum
     params["objective_id"] = objective["id"]
-    params["size"] = len(data_silo)
-    params["maximum"] = max(data_silo)
-    params["minimum"] = min(data_silo)
-    # bb = ts.ckks_tensor(ckks_context, [params['mean']]).serialize()
-    # print(len(bb))
-    sio.emit('receive_params', params, namespace='/analytics')
-    sio.sleep(10)
+    params["encryption"] = encryption
 
+    params_filename = "params_{}.pkl".format(objective["id"])
+    params_file = os.path.join(PARAMS_DIR, params_filename)
+
+    with open(params_file, "wb") as f:
+        pickle.dump(params, f)
+
+    print("Uploading")
+    ftp_client.upload(params_file, params_filename)
+    print("Uploaded")
+
+    print('Emitting..')
+    for i in range(2):
+        if not sio.connected:
+            print("Not connected")
+        await sio.emit('receive_params', {"status": "success", "params_file": params_filename}, namespace='/analytics')
+        await sio.sleep(10)
+    print("Emitted")
     objective = None
 
-    wait_for_objective()
+    await wait_for_objective()
 
 
-def sigint_handler(signal, frame):
+def shutdown(loop):
     print('exit')
-    sio.emit("disconnect", {}, namespace="/analytics")
-    sio.disconnect()
-    sio.sleep(1)
-    sys.exit(0)
+    # await sio.emit("disconnect", {}, namespace="/analytics")
+    # await sio.disconnect()
+    # await sio.sleep(1)
+    # for talk in asyncio.Task.all_tasks():
+    #     talk.cancel()
+    # sio.disconnect()
+    # sio.sleep(1)
+    # loop.close()
+
+    # tasks = [task for task in asyncio.all_tasks() if task is not
+    #          asyncio.current_task()]
+    # list(map(lambda task: task.cancel(), tasks))
+    # results = asyncio.gather(*tasks, return_exceptions=True)
+    # print('finished awaiting cancelled tasks, results: {0}'.format(results))
+    # loop.stop()
+
+    sys.exit(1)
 
 
-signal.signal(signal.SIGINT, sigint_handler)
+# signal.signal(signal.SIGINT, sigint_handler)
+
+
+async def start_client():
+    await sio.connect('http://localhost:9999?type=analytics&cid={}'.format(8888), namespaces=["/analytics"],
+                      transports=['websocket'])
+    await sio.start_background_task(wait_for_objective)
+
+    await sio.wait()
+
+
+@sio.on("check", namespace="/analytics")
+async def check(data):
+    print("check")
+    return data
 
 
 if __name__ == '__main__':
-    argparser = ArgumentParser()
-    argparser.add_argument("--cid", type=str, help="Enter client id")
-    argparser.add_argument("--data", type=str, help="Enter data")
-    sio = socketio.Client()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(start_client())
+    loop.add_signal_handler(signal.SIGINT, functools.partial(asyncio.ensure_future, shutdown(loop)))
+    loop.close()
 
-    args = argparser.parse_args()
-    data = args.data
-
-    data_silo = [int(a) for a in data.split(",")]
-
-    sio.connect('http://localhost:9999?type=analytics&cid={}'.format(argparser.parse_args().cid), namespaces=['/analytics'])
-    t = sio.start_background_task(transmit_params)

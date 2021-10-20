@@ -1,12 +1,18 @@
 from ftplib import FTP
 
+from config import FTP_SERVER_URL
+
+
 class FTPClient:
     def __init__(self, host, user, passwd):
         self.ftp = FTP(host)
+        self.ftp.set_pasv(True)
         self.ftp.login(user, passwd)
 
     def download(self, filename, path):
+        print('Downloading')
         self.ftp.retrbinary('RETR ' + path, open(filename, 'wb').write)
+        print("Downloaded")
 
     def upload(self, filename, path):
         self.ftp.storbinary('STOR ' + path, open(filename, 'rb'))
@@ -17,8 +23,16 @@ class FTPClient:
     def close(self):
         self.ftp.quit()
 
-# ftp_client = FTPClient('0.0.0.0', 'user', 'password')
-# ftp_client.list_server_files()
-# ftp_client.upload('model/local.h5','local2.h5')
-# # ftp_client.download('model/global.h5','global.h5')
-# ftp_client.close()
+
+def get_client(username, password):
+    print("FTP User credentials:", FTP_SERVER_URL, username, password)
+    return FTPClient(host=FTP_SERVER_URL, user=username, passwd=password)
+
+
+def check_credentials(username, password):
+    try:
+        FTPClient(host=FTP_SERVER_URL, user=username, passwd=password)
+        return True
+    except Exception as e:
+        print("Error:{}".format(str(e)))
+        return False
