@@ -1,7 +1,8 @@
 import os
 import tenseal as ts
-from ravop.config import BASE_DIR
+# from ravop.config import BASE_DIR
 
+BASE_DIR = "."
 
 def dump_context(context, cid):
     filename = "context_{}.txt".format(cid)

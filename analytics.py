@@ -6,6 +6,8 @@ import os
 import pickle
 import signal
 import sys
+from argparse import ArgumentParser
+
 import numpy as np
 import socketio
 import tenseal as ts
@@ -16,9 +18,9 @@ from helpers import load_context
 
 logger = logging.getLogger(__name__)
 
-sio = socketio.AsyncClient(logger=True, engineio_logger=True)
+sio = socketio.AsyncClient(logger=True)
 client = None
-data_silo = [1, 2, 3]
+data_silo = None
 cid = None
 # avg = sum(data_silo) / len(data_silo)
 #
@@ -148,12 +150,22 @@ async def cal_params(ftp_client):
         minimum = ts.ckks_tensor(ckks_context, [minimum]).serialize()
         maximum = ts.ckks_tensor(ckks_context, [maximum]).serialize()
 
-    params["mean"] = mean
-    params["variance"] = variance
-    params["standard_deviation"] = standard_deviation
-    params["size"] = size
-    params["minimum"] = minimum
-    params["maximum"] = maximum
+    # params["mean"] = mean
+    # params["variance"] = variance
+    # params["standard_deviation"] = standard_deviation
+    # params["size"] = size
+    # params["minimum"] = minimum
+    # params["maximum"] = maximum
+
+    params['values'] = {
+        "mean": mean,
+        "variance": variance,
+        "standard_deviation": standard_deviation,
+        "size": size,
+        "minimum": minimum,
+        "maximum": maximum
+    }
+
     params["objective_id"] = objective["id"]
     params["encryption"] = encryption
 
@@ -168,11 +180,10 @@ async def cal_params(ftp_client):
     print("Uploaded")
 
     print('Emitting..')
-    for i in range(2):
-        if not sio.connected:
-            print("Not connected")
-        await sio.emit('receive_params', {"status": "success", "params_file": params_filename}, namespace='/analytics')
-        await sio.sleep(10)
+    if not sio.connected:
+        print("Not connected")
+    await sio.emit('receive_params', {"status": "success", "objective_id":objective["id"], "params_file": params_filename}, namespace='/analytics')
+    await sio.sleep(10)
     print("Emitted")
     objective = None
 
@@ -203,8 +214,8 @@ def shutdown(loop):
 # signal.signal(signal.SIGINT, sigint_handler)
 
 
-async def start_client():
-    await sio.connect('http://localhost:9999?type=analytics&cid={}'.format(8888), namespaces=["/analytics"],
+async def start_client(cid):
+    await sio.connect('http://0.0.0.0:9999?type=analytics&cid={}'.format(cid), namespaces=["/"],
                       transports=['websocket'])
     await sio.start_background_task(wait_for_objective)
 
@@ -218,8 +229,18 @@ async def check(data):
 
 
 if __name__ == '__main__':
+    argparser = ArgumentParser()
+    argparser.add_argument("--cid", type=str, help="Enter client id")
+    argparser.add_argument("--data", type=str, help="Enter data")
+    sio = socketio.Client()
+
+    args = argparser.parse_args()
+    data = args.data
+
+    data_silo = [int(a) for a in data.split(",")]
+
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(start_client())
+    loop.run_until_complete(start_client(cid))
     loop.add_signal_handler(signal.SIGINT, functools.partial(asyncio.ensure_future, shutdown(loop)))
     loop.close()
 

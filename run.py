@@ -7,8 +7,8 @@ sio = socketio.Client()
 client_status = {}
 epoch = 0
 
-ftp_client = FTPClient('0.0.0.0', 'menon_uk1998', 'raven')
-print(ftp_client.list_server_files())
+ftp_client = FTPClient('54.201.212.222', 'Unni', '12345')
+ftp_client.list_server_files()
 
 @sio.event
 def connect():
