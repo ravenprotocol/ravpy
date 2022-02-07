@@ -5,11 +5,9 @@ import pickle
 
 import numpy as np
 import requests
-import tenseal as ts
 
 from config import CONTEXT_FOLDER, PARAMS_DIR, SOCKET_SERVER_URL, CID, ENCRYPTION
 from ftp_client import get_client
-from helpers import load_context
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +15,7 @@ from globals import g
 
 
 def fetch_and_load_context(client, context_filename):
+    from helpers import load_context
     client.download(os.path.join(CONTEXT_FOLDER, context_filename), context_filename)
     ckks_context = load_context(os.path.join(CONTEXT_FOLDER, context_filename))
     return ckks_context
@@ -30,16 +29,20 @@ def get_ftp_credentials(cid):
     return None
 
 
-def compute(data_silo, graph, subgraph_ops):
+def compute(data_silo, graph, subgraph_ops, final_column_names):
+    
     print("Get ftp credentials")
     credentials = get_ftp_credentials(CID)
     if credentials is None:
         raise Exception("Error")
+    print("FTP credentials: {}".format(credentials['ftp_credentials']))
+
     ftp_client = get_client(**ast.literal_eval(credentials['ftp_credentials']))
 
-    print("Downloading context file...")
-    ckks_context = fetch_and_load_context(client=ftp_client,
-                                          context_filename="context_without_private_key_{}.txt".format(CID))
+    if ENCRYPTION:
+        print("Downloading context file...")
+        ckks_context = fetch_and_load_context(client=ftp_client,
+                                            context_filename="context_without_private_key_{}.txt".format(CID))
 
     final_params = {}
     for subgraph_dict in subgraph_ops:
@@ -67,6 +70,7 @@ def compute(data_silo, graph, subgraph_ops):
                     standard_deviation = np.sqrt(variance)
 
                 if ENCRYPTION:
+                    import tenseal as ts
                     print('Encrypting params...')
                     if mean is not None:
                         mean = ts.ckks_tensor(ckks_context, [mean]).serialize()
@@ -101,6 +105,7 @@ def compute(data_silo, graph, subgraph_ops):
     result["graph_id"] = graph['id']
     result["encryption"] = ENCRYPTION
     result["params"] = final_params
+    result["column_names"] = final_column_names
 
     # print(result)
 
@@ -122,3 +127,4 @@ def compute(data_silo, graph, subgraph_ops):
                   namespace='/client')
     g.client.sleep(10)
     print("Emitted")
+    g.client.disconnect()
