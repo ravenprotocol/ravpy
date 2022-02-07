@@ -4,7 +4,7 @@ import os
 import shutil
 import time
 from argparse import ArgumentParser
-
+import pandas as pd
 import requests
 
 from compute import compute
@@ -12,7 +12,7 @@ from config import SOCKET_SERVER_URL, BENCHMARK_FILE_NAME, CONTEXT_FOLDER, CID
 
 from globals import g
 from ftp_client import get_client
-from helpers import load_context
+
 from utils import download_file, get_key
 from ravop import compute_locally, functions, np
 
@@ -59,21 +59,20 @@ def get_rank(data):
     return rank
 
 
-def apply_rules(data_columns, rules):
+def apply_rules(data_columns, rules, final_column_names):
     data_silo = []
-    if len(data_columns) == len(rules['rules']):
-        for index, data_column in enumerate(data_columns):
-            data_column_rules = rules['rules'][index]
+    
+    for index, column_name in enumerate(final_column_names):
+        data_column_rules = rules['rules'][column_name]
 
-            data_column_values = []
-            for value in data_column:
-                if data_column_rules['min'] < value < data_column_rules['max']:
-                    data_column_values.append(value)
+        data_column_values = []
+        for value in data_columns[index]:
+            if data_column_rules['min'] < value < data_column_rules['max']:
+                data_column_values.append(value)
 
-            data_silo.append(data_column_values)
-        return data_silo
-    else:
-        return None
+        data_silo.append(data_column_values)
+    return data_silo
+
 
 
 if __name__ == '__main__':
@@ -105,7 +104,7 @@ if __name__ == '__main__':
         print(subgraph_ops)
         graph_rules = ast.literal_eval(graph['rules'])
 
-        print(graph, graph_rules)
+        print("\n\nGRAPH RULEZZ", graph_rules)
 
         user_choice = input("How do you want to input your data samples?(0: file, 1: other): ")
 
@@ -114,27 +113,44 @@ if __name__ == '__main__':
 
         if user_choice == "0":
             file_path = input("Enter file path: ")
+            
+            dataframe = pd.read_csv(file_path)
+            column_names = []
+            for col in dataframe.columns:
+                column_names.append(col)
+            # column_names.sort()
+
+            final_column_names = []
+            for key, value in graph_rules['rules'].items():
+                if key in column_names:
+                    final_column_names.append(key)
+                else:
+                    raise Exception('Incorrect Rules Format.')
+            final_column_names.sort()
+
             data_columns = []
-            with open(file_path, "r") as f:
-                for line in f:
-                    data_column = json.loads(line)
-                    data_columns.append(data_column)
+            for column_name in final_column_names:
+                column = dataframe[column_name].tolist()
+                data_columns.append(column)
 
-            data_silo = apply_rules(data_columns, rules=graph_rules)
+            # with open(file_path, "r") as f:
+            #     for line in f:
+            #         data_column = json.loads(line)
+            #         data_columns.append(data_column)
+
+            data_silo = apply_rules(data_columns, rules=graph_rules, final_column_names=final_column_names)
             print(data_silo)
             if data_silo is not None:
-                # Fetch ftp credentials
-
-                compute(data_silo, graph, subgraph_ops)
+                compute(data_silo, graph, subgraph_ops, final_column_names)
             else:
                 print("You can't participate as your data is it in the wrong format")
 
-        elif user_choice == "1":
-            data_columns = input("Enter data: ")
-            data_columns = ast.literal_eval(data_columns)
-            data_silo = apply_rules(data_columns, rules=graph_rules)
-            print(data_silo)
-            if data_silo is not None:
-                compute(data_silo, graph, subgraph_ops)
-            else:
-                print("You can't participate as your data is it in the wrong format")
+        # elif user_choice == "1":
+        #     data_columns = input("Enter data: ")
+        #     data_columns = ast.literal_eval(data_columns)
+        #     data_silo = apply_rules(data_columns, rules=graph_rules)
+        #     print(data_silo)
+        #     if data_silo is not None:
+        #         compute(data_silo, graph, subgraph_ops, final_column_names)
+        #     else:
+        #         print("You can't participate as your data is it in the wrong format")
