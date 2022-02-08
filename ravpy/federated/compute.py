@@ -4,33 +4,16 @@ import os
 import pickle
 
 import numpy as np
-import requests
 
-from config import CONTEXT_FOLDER, PARAMS_DIR, SOCKET_SERVER_URL, CID, ENCRYPTION
-from ftp_client import get_client
+from ..config import PARAMS_DIR, CID, ENCRYPTION
+from ..ftp import get_client
+from ..globals import g
+from ..utils import get_ftp_credentials, fetch_and_load_context
 
 logger = logging.getLogger(__name__)
 
-from globals import g
-
-
-def fetch_and_load_context(client, context_filename):
-    from helpers import load_context
-    client.download(os.path.join(CONTEXT_FOLDER, context_filename), context_filename)
-    ckks_context = load_context(os.path.join(CONTEXT_FOLDER, context_filename))
-    return ckks_context
-
-
-def get_ftp_credentials(cid):
-    # Get
-    r = requests.get(url="{}/client/ftp_credentials/?cid={}".format(SOCKET_SERVER_URL, cid))
-    if r.status_code == 200:
-        return r.json()
-    return None
-
 
 def compute(data_silo, graph, subgraph_ops, final_column_names):
-    
     print("Get ftp credentials")
     credentials = get_ftp_credentials(CID)
     if credentials is None:
@@ -42,7 +25,7 @@ def compute(data_silo, graph, subgraph_ops, final_column_names):
     if ENCRYPTION:
         print("Downloading context file...")
         ckks_context = fetch_and_load_context(client=ftp_client,
-                                            context_filename="context_without_private_key_{}.txt".format(CID))
+                                              context_filename="context_without_private_key_{}.txt".format(CID))
 
     final_params = {}
     for subgraph_dict in subgraph_ops:

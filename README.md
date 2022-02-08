@@ -1,15 +1,11 @@
-# raven-federated-client
+# ravpy
+
+## Raven's python client for distributed and federated learning
 
 ## How to Run
 
 Firstly, make sure Ravsock is up and running.
 
-### 1. Run the Scheduler Script
-```bash
-$ python run_scheduler.py
-```
+### 1. Run
 
-### 2. Run Worker
-```bash
-$ python run_worker.py --action participate --federated_id <Enter graph_id>
-```
+    $ python run.py --action participate --federated_id <Enter graph_id>

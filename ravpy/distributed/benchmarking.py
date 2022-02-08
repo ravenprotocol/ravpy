@@ -3,8 +3,8 @@ import time
 
 from ravop import compute_locally, functions
 
-from config import SOCKET_SERVER_URL, BENCHMARK_FILE_NAME
-from utils import download_file, get_key
+from ..config import SOCKET_SERVER_URL, BENCHMARK_FILE_NAME
+from ..utils import download_file, get_key
 
 
 def benchmark():

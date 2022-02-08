@@ -1,6 +1,6 @@
 from ftplib import FTP
 
-from config import FTP_SERVER_URL
+from ..config import FTP_SERVER_URL
 
 
 class FTPClient:

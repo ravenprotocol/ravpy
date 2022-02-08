@@ -1,7 +1,7 @@
 import socketio
 
-from config import SOCKET_SERVER_HOST, SOCKET_SERVER_PORT, CID
-from utils import Singleton
+from .config import SOCKET_SERVER_HOST, SOCKET_SERVER_PORT, CID
+from .utils import Singleton
 
 
 def get_client():
