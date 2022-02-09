@@ -3,7 +3,10 @@ import shutil
 
 import numpy as np
 import requests
-import tenseal as ts
+
+from .config import ENCRYPTION
+if ENCRYPTION:
+    import tenseal as ts
 
 from .config import BASE_DIR, CONTEXT_FOLDER, SOCKET_SERVER_URL
 
