@@ -111,3 +111,9 @@ def compute(data_silo, graph, subgraph_ops, final_column_names):
     g.client.sleep(10)
     print("Emitted")
     g.client.disconnect()
+
+
+@g.client.on('check_status',namespace='/client')
+def check_status(data):
+    g.client.emit('check_callback',data,namespace='/client')
+
