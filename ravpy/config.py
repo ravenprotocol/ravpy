@@ -17,6 +17,7 @@ SOCKET_SERVER_PORT = "9999"
 SOCKET_SERVER_URL = "http://{}:{}".format(SOCKET_SERVER_HOST, SOCKET_SERVER_PORT)
 
 BENCHMARK_FILE_NAME = "distributed/benchmark.json"
-CID = "333"
+CID = "111"
+TYPE = "client"
 
 ENCRYPTION = False

@@ -1,12 +1,12 @@
 import socketio
 
-from .config import SOCKET_SERVER_HOST, SOCKET_SERVER_PORT, CID
+from .config import SOCKET_SERVER_HOST, SOCKET_SERVER_PORT, CID, TYPE
 from .utils import Singleton
 
 
 def get_client():
-    client = socketio.Client(logger=True)
-    client.connect(url="http://{}:{}?cid={}".format(SOCKET_SERVER_HOST, SOCKET_SERVER_PORT, CID),
+    client = socketio.Client(logger=False)
+    client.connect(url="http://{}:{}?cid={}&type={}".format(SOCKET_SERVER_HOST, SOCKET_SERVER_PORT, CID,TYPE),
                    namespaces=['/client'])
     return client
 
