@@ -5,6 +5,7 @@ import numpy as np
 import requests
 
 from .config import ENCRYPTION
+
 if ENCRYPTION:
     import tenseal as ts
 
@@ -110,9 +111,9 @@ def print_graphs(graphs):
               "Rules:{}".format(graph['id'], graph['name'], graph['approach'], graph['rules']))
 
 
-def get_subgraph_ops(graph_id):
+def get_subgraph_ops(graph_id, cid):
     # Get subgraph ops
-    r = requests.get(url="{}/subgraph/ops/get/?graph_id={}&cid={}".format(SOCKET_SERVER_URL, graph_id, CID))
+    r = requests.get(url="{}/subgraph/ops/get/?graph_id={}&cid={}".format(SOCKET_SERVER_URL, graph_id, cid))
     if r.status_code == 200:
         return r.json()['subgraph_ops']
     return None

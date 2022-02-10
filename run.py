@@ -21,24 +21,30 @@ if __name__ == '__main__':
     if args.action == "list":
         graphs = get_graphs()
         print_graphs(graphs)
-        g.client.disconnect()
 
     elif args.action == "participate":
-        if args.federated_id is None:
-            raise Exception("Enter id of the federated analytics graph to join")
-
         if args.cid is None:
             raise Exception("Client id is required")
 
+        if args.federated_id is None:
+            raise Exception("Enter id of the federated analytics graph to join")
+
         print("Let's participate")
 
-        # Connect
+        # connect
+        g.cid = args.cid
         client = g.client
+
+        if client is None:
+            print("Unable to connect to ravsock. Make sure you are using the right hostname and port")
+            exit()
+
+        # Connect
         graph = get_graph(graph_id=args.federated_id)
         if graph is None:
             raise Exception("Invalid graph id")
 
-        subgraph_ops = get_subgraph_ops(graph["id"])
+        subgraph_ops = get_subgraph_ops(graph["id"], cid=args.cid)
         graph_rules = ast.literal_eval(graph['rules'])
 
         # user_choice = input("How do you want to input your data samples?(0: file, 1: other): ")

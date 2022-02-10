@@ -13,9 +13,6 @@ Firstly, make sure Ravsock is up and running.
     SOCKET_SERVER_PORT = "9999"
     SOCKET_SERVER_URL = "http://{}:{}".format(SOCKET_SERVER_HOST, SOCKET_SERVER_PORT)
     
-    # Set CID (CID is the client's unique id and cannot used by any other client)
-    CID = "123"
-    
     # Enable/disable encryption
     ENCRYPTION = True
     
@@ -25,7 +22,7 @@ Firstly, make sure Ravsock is up and running.
 
 #### 2. Join a federated analytics graph
 
-    $ python run.py --action participate --federated_id <Enter graph_id>
+    $ python run.py --action participate --cid 123 --federated_id <Enter graph_id>
 
 #### 3. Enter data file path 
 
