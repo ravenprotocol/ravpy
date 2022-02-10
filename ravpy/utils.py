@@ -81,3 +81,65 @@ def get_ftp_credentials(cid):
     if r.status_code == 200:
         return r.json()
     return None
+
+
+def get_graph(graph_id):
+    # Get graph
+    r = requests.get(url="{}/graph/get/?id={}".format(SOCKET_SERVER_URL, graph_id))
+    if r.status_code == 200:
+        return r.json()
+    return None
+
+
+def get_graphs():
+    # Get graphs
+    r = requests.get(url="{}/graph/get/all/?approach=federated".format(SOCKET_SERVER_URL))
+    if r.status_code != 200:
+        return None
+
+    graphs = r.json()
+    return graphs
+
+
+def print_graphs(graphs):
+    print("\nGraphs")
+    for graph in graphs:
+        print("\nGraph id:{}\n"
+              "Name:{}\n"
+              "Approach:{}\n"
+              "Rules:{}".format(graph['id'], graph['name'], graph['approach'], graph['rules']))
+
+
+def get_subgraph_ops(graph_id):
+    # Get subgraph ops
+    r = requests.get(url="{}/subgraph/ops/get/?graph_id={}&cid={}".format(SOCKET_SERVER_URL, graph_id, CID))
+    if r.status_code == 200:
+        return r.json()['subgraph_ops']
+    return None
+
+
+def get_rank(data):
+    rank = len(np.array(data).shape)
+    return rank
+
+
+def apply_rules(data_columns, rules, final_column_names):
+    data_silo = []
+
+    for index, column_name in enumerate(final_column_names):
+        data_column_rules = rules['rules'][column_name]
+
+        if len(data_column_rules.keys()) == 0:
+            data_column_values = []
+            for value in data_columns[index]:
+                data_column_values.append(value)
+            data_silo.append(data_column_values)
+            continue
+
+        data_column_values = []
+        for value in data_columns[index]:
+            if data_column_rules['min'] < value < data_column_rules['max']:
+                data_column_values.append(value)
+
+        data_silo.append(data_column_values)
+    return data_silo
