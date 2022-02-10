@@ -10,6 +10,7 @@ from ravpy.utils import get_graphs, print_graphs, get_graph, get_subgraph_ops, a
 if __name__ == '__main__':
     argparser = ArgumentParser()
     argparser.add_argument("--action", type=str, help="Enter action", default=None)
+    argparser.add_argument("--cid", type=str, help="Enter client id", default=None)
     argparser.add_argument("--federated_id", type=str, help="Id of the federated graph", default=None)
 
     args = argparser.parse_args()
@@ -25,6 +26,9 @@ if __name__ == '__main__':
     elif args.action == "participate":
         if args.federated_id is None:
             raise Exception("Enter id of the federated analytics graph to join")
+
+        if args.cid is None:
+            raise Exception("Client id is required")
 
         print("Let's participate")
 
@@ -66,7 +70,7 @@ if __name__ == '__main__':
 
         data_silo = apply_rules(data_columns, rules=graph_rules, final_column_names=final_column_names)
         if data_silo is not None:
-            compute(data_silo, graph, subgraph_ops, final_column_names)
+            compute(args.cid, data_silo, graph, subgraph_ops, final_column_names)
         else:
             print("You can't participate as your data is it in the wrong format")
 

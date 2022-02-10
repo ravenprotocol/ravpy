@@ -5,7 +5,7 @@ import pickle
 
 import numpy as np
 
-from ..config import PARAMS_DIR, CID, ENCRYPTION
+from ..config import PARAMS_DIR, ENCRYPTION
 from ..ftp import get_client
 from ..globals import g
 from ..utils import get_ftp_credentials, fetch_and_load_context
@@ -13,9 +13,9 @@ from ..utils import get_ftp_credentials, fetch_and_load_context
 logger = logging.getLogger(__name__)
 
 
-def compute(data_silo, graph, subgraph_ops, final_column_names):
+def compute(cid, data_silo, graph, subgraph_ops, final_column_names):
     print("Get ftp credentials")
-    credentials = get_ftp_credentials(CID)
+    credentials = get_ftp_credentials(cid)
     if credentials is None:
         raise Exception("Error")
     print("FTP credentials: {}".format(credentials['ftp_credentials']))
@@ -25,7 +25,7 @@ def compute(data_silo, graph, subgraph_ops, final_column_names):
     if ENCRYPTION:
         print("Downloading context file...")
         ckks_context = fetch_and_load_context(client=ftp_client,
-                                              context_filename="context_without_private_key_{}.txt".format(CID))
+                                              context_filename="context_without_private_key_{}.txt".format(cid))
 
     final_params = {}
     for subgraph_dict in subgraph_ops:
