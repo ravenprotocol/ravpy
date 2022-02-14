@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="ravpy",
-    version="0.2-alpha",
+    version="0.3",
     packages=find_packages(),
     install_requires=[
         "numpy==1.21.5",
