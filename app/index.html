@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' http://xxxx 'unsafe-inline' 'unsafe-eval';">
+    <meta http-equiv="X-Content-Security-Policy" content="script-src 'self' http://xxxx 'unsafe-inline' 'unsafe-eval';">
+
+    <title>Ravpy Client</title>
+    <link rel="stylesheet"
+          href="./node_modules/bootstrap/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="./node_modules/dropzone/dist/dropzone.css"/>
+
+    <!--CSS Dependencies -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: #fafafa;
+        }
+
+        .card {
+            margin-top: 2em;
+            margin-bottom: 2em;
+            border-radius: 2px;
+            border: 1px solid rgba(150, 150, 150, 0.1);
+            box-shadow: 0 5px 10px rgba(154, 160, 185, .05), 0 15px 40px rgba(166, 173, 201, .2);
+        }
+
+        input {
+            border-radius: 1px;
+        }
+
+        #clientIdForm {
+            display: none;
+        }
+
+        #graphsCard {
+            display: none;
+        }
+
+        #spinnerGraphs {
+            display: none;
+            margin-bottom: 1em;
+        }
+
+        #graphsTable {
+            display: none;
+            margin-top: 2em;
+        }
+
+        #graphsTable td {
+            text-transform: capitalize;
+        }
+
+        #logoutButton {
+            color: #dc3545;
+        }
+
+        #loginButton {
+            color: #007bff;
+        }
+
+        #loginButton:hover, #logoutButton:hover {
+            color: white;
+        }
+
+        #showErrorMessage {
+            display: none;
+        }
+
+        .btn {
+            border-radius: 1px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="navbar navbar-light navbar-fixed-top" style="background-color: #e3f2fd;">
+    <div class="navbar-header pull-left">
+        <a class="navbar-brand" style="margin-left: 1em;"><img src="./logo.webp" alt="" width="auto" height="20">&nbsp;Ravpy</a>
+    </div>
+    <div class="navbar-header pull-right" style="margin-right: 2em;">
+        <ul class="nav" id="loggedInNav" style="display: none;">
+            <li class="nav-item" style="border-right: 1px solid rgba(0,0,0,0.5)">
+                <span id="clientIdShow" class="nav-link" style="color: black;">Client Id:&nbsp;<span
+                        class="clientIdValue"></span></span>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" id="showModelButton" href="#">Models</a>
+            </li>
+            <li class="nav-item">
+                <button type="button" class="btn btn-sm btn-outline-danger nav-link" id="logoutButton">Logout</button>
+            </li>
+        </ul>
+
+        <ul class="nav" id="loggedOutNav">
+            <li class="nav-item">
+                <button type="button" id="loginButton" class="btn btn-outline-primary">Login</button>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="card" id="spinnerGraphs">
+            <div class="card-body">
+                <h5 class="card-title">Loading...</h5>
+                <div class="card-text">
+                    <div class="text-center">
+                        <div class="spinner-grow" role="status"
+                             style="margin-top: 1em;margin-bottom: 1em;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <div class="card" style="margin-bottom: 1em;" id="graphsCard">
+                <div class="card-body" style="position: relative;">
+                    <h5 class="card-title">Models</h5>
+                    <button type="button" class="btn btn-outline-primary" id="reloadModelsButton"
+                            style="position: absolute;top: 1em;right: 1em;">Reload
+                    </button>
+                    <div class="card-text">
+                        <table class="table" id="graphsTable">
+                            <thead class="table-primary">
+                            <tr>
+                                <th scope="col">ID</th>
+                                <th scope="col">Name</th>
+                                <th scope="col">Algorithm</th>
+                                <th scope="col">Approach</th>
+                                <th scope="col">Rules</th>
+                                <th scope="col">Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+
+                        <div id="showErrorMessage">
+                            <p class="message">Unable to fetch models</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card" style="margin-bottom: 1em;" id="activeModels">
+                <div class="card-body" style="position: relative;">
+                    <h5 class="card-title">Active Models</h5>
+                    <div class="card-text">
+                        There are no active models
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card" style="margin-bottom: 1em;" id="clientIdForm">
+            <div class="card-body">
+                <h5 class="card-title">Client Id</h5>
+                <div class="card-text">
+                    <form>
+                        <div class="mb-3">
+                            <label for="clientIdInput" class="form-label">Enter Client Id</label>
+                            <input type="text" class="form-control" id="clientIdInput" aria-describedby="clientIdHelp"
+                                   required>
+                            <div id="clientIdHelp" class="form-text">Enter your unique client id. It can be your email,
+                                mobile number or any other unique id.
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <button type="submit" id="clientIdButton" class="btn btn-outline-primary">Next</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" tabindex="-1" id="enterValuesModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Data</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="padding: 2em;">
+                <form>
+                    <div class="mb-3">
+                        <label for="inputValues">Enter Values</label><input type="text" class="form-control"
+                                                                       id="inputValues"/>
+                    </div>
+                </form>
+                <div class="text-center">
+                    Or
+                </div>
+                <p>Upload file</p>
+                <form class="dropzone" id="my-great-dropzone"></form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-outline-success" id="submitValuesButton">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="web3modal.js" type="text/javascript"></script>
+<script src="./node_modules/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="socket.io-4.3.2.js" type="text/javascript"></script>
+<script src="view.js" type="text/javascript"></script>
+<script src="raven.js" type="text/javascript"></script>
+</body>
+</html>

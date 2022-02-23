@@ -11,6 +11,8 @@ setup(
         "python-engineio==4.2.1",
         "python-socketio==5.4.1",
         "requests==2.27.1",
-        "tenseal==0.3.6"
+        "tenseal==0.3.6",
+        "pyqt5==5.15.6",
+        "pyqt5-tools==5.15.4.3.2"
     ],
 )
