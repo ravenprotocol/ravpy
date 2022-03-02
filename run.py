@@ -13,7 +13,7 @@ if __name__ == '__main__':
     argparser.add_argument("-a", "--action", type=str, help="Enter action", default=None)
     argparser.add_argument("-c", "--cid", type=str, help="Enter client id", default=None)
     argparser.add_argument("-g", "--graph_id", type=str, help="Id of the graph", default=None)
-    argparser.add_argument("-v", "--values", type=str, help="Values to use", default=None)
+    argparser.add_argument("-d", "--data", type=str, help="Data to use", default=None)
     argparser.add_argument("-f", "--file_path", type=str, help="File path containing samples to use", default=None)
 
     if len(sys.argv) == 1:
@@ -55,14 +55,14 @@ if __name__ == '__main__':
         subgraph_ops = get_subgraph_ops(graph["id"], cid=args.cid)
         graph_rules = ast.literal_eval(graph['rules'])
 
-        if args.values is None and args.file_path is None:
+        if args.data is None and args.file_path is None:
             g.client.disconnect()
             raise Exception("Provide values or file path to use")
 
-        if args.values is not None:
+        if args.data is not None:
             pass
-            # data_columns = args.values
-            # data_columns = ast.literal_eval(args.values)
+            # data_columns = args.data
+            # data_columns = ast.literal_eval(args.data)
             # data_silo = apply_rules(data_columns, rules=graph_rules)
             # print(data_silo)
             # if data_silo is not None:
@@ -71,6 +71,7 @@ if __name__ == '__main__':
             #     print("You can't participate as your data is it in the wrong format")
 
         elif args.file_path is not None:
+            print("File path:", args.file_path)
             dataframe = pd.read_csv(args.file_path)
             column_names = []
             for col in dataframe.columns:
@@ -93,5 +94,6 @@ if __name__ == '__main__':
             data_silo = apply_rules(data_columns, rules=graph_rules, final_column_names=final_column_names)
             if data_silo is not None:
                 compute(args.cid, data_silo, graph, subgraph_ops, final_column_names)
+
             else:
                 print("You can't participate as your data is it in the wrong format")

@@ -1,6 +1,7 @@
 let $ = require('jquery');
 let {PythonShell} = require('python-shell');
 let {Dropzone} = require("dropzone");
+const Swal = require('sweetalert2')
 
 const RAVSOCK_SERVER_URL = "localhost";
 //const RAVSOCK_SERVER_URL = "host.docker.internal";
@@ -9,6 +10,7 @@ const CLIENT_TYPE = "client";
 const GET_GRAPHS_URL = 'http://' + RAVSOCK_SERVER_URL + ':' + RAVSOCK_SERVER_PORT + '/graph/get/all/';
 let graphs = null;
 let clientId = null;
+let graphId = null;
 
 Dropzone.autoDiscover = false;
 
@@ -20,16 +22,6 @@ Dropzone.options.myGreatDropzone = { // camelized version of the `id`
     maxFiles: 1,
     accept: function (file, done) {
         console.log("File added:", file, done);
-
-        let options = {
-            mode: 'text',
-            args: ["--action", "list"]
-        };
-
-        PythonShell.run('../run.py', options, function (err, results) {
-            if (err) throw err;
-            console.log('results', results);
-        });
     },
     autoProcessQueue: false,
     acceptedFiles: "text/csv",
@@ -74,7 +66,7 @@ function showGraphs() {
                 }
 
                 $("#graphsTable tbody").append("<tr><td>" + graph_data.id + "</td><td>" + graph_data.name + "</td><td>" + algorithm + "</td><td>" + graph_data.approach + "</td><td style='width: 30%'>" + rules + "</td><td><button type='button'" +
-                    " class='btn btn-outline-success participateButton' data-id='" + r[i].id + "'>Participate</button></td></tr>");
+                    " class='btn btn-outline-success participateButton' data-graph-id='" + r[i].id + "'>Participate</button></td></tr>");
             }
             $("#graphsTable").fadeIn();
             $("#graphsCard").fadeIn();
@@ -103,12 +95,6 @@ function formatRules(rules) {
     console.log(output);
     return output;
 }
-
-
-$(document).on('click', '.openButton', function () {
-    var data_id = $(this).data("id");
-    console.log(data_id);
-});
 
 $(document).on('click', '#clientIdButton', function () {
     clientId = $("#clientIdInput").val();
@@ -156,11 +142,62 @@ $(document).on('click', '#loginButton', function () {
 });
 
 $(document).on('click', '.participateButton', function () {
-    var myModal = new bootstrap.Modal(document.getElementById('enterValuesModal'), {
+    var myModal = new bootstrap.Modal(document.getElementById('addDataModal'), {
         keyboard: false
     });
     myModal.show();
+
+    graphId = $(this).data("graph-id");
+    console.log("Graph id:", graphId);
 });
+
+$(document).on('click', '#addDataButton', function () {
+    console.log(myDropzone.files);
+
+    let files = myDropzone.files;
+
+    let data = $("#inputData").val();
+
+    if (data === "" && files.length === 0) {
+        Swal.fire("Oops!", "Add data first", "error");
+    } else {
+        if (data !== "") {
+            // process data
+            runPythonScript(data, null);
+        } else if (files.length > 0) {
+            // process files
+            runPythonScript(null, files[0].path);
+        }
+    }
+});
+
+function runPythonScript(data, file_path) {
+    console.log(data, file_path);
+    let args = "-a participate -c "+localStorage.getItem("clientId")+" -g "+graphId;
+
+    if(data !== null){
+        args += " -d";
+        args += " "+data;
+    }else if(file_path !== null){
+        args += " -f";
+        args += " "+file_path;
+    }
+
+    console.log(args);
+
+    let options = {
+        mode: 'text',
+        args: args,
+        pythonOptions: ['-u'],
+        pythonPath: "/Users/apple/miniconda3/envs/ravpy/bin/python",
+        scriptPath: "/Users/apple/RavenProtocol/codebase/ravpy"
+    };
+
+    PythonShell.run('run.py', options, function (err, results) {
+        if (err) throw err;
+        console.log('results', results);
+    });
+}
 
 function hideAll() {
     $("#spinnerGraphs").hide();
@@ -168,5 +205,5 @@ function hideAll() {
     $("#loggedOutNav").hide();
     $("#clientIdForm").hide();
     $("#graphsCard").hide();
-    $("#activeModels").hide()
+    $("#activeModels").hide();
 }

@@ -186,7 +186,7 @@
     </div>
 </div>
 
-<div class="modal" tabindex="-1" id="enterValuesModal">
+<div class="modal" tabindex="-1" id="addDataModal">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -196,19 +196,19 @@
             <div class="modal-body" style="padding: 2em;">
                 <form>
                     <div class="mb-3">
-                        <label for="inputValues">Enter Values</label><input type="text" class="form-control"
-                                                                       id="inputValues"/>
+                        <label for="inputData" style="margin-bottom: 1em;">Enter data manually</label>
+                        <input type="text" class="form-control" id="inputData"/>
                     </div>
                 </form>
                 <div class="text-center">
                     Or
                 </div>
-                <p>Upload file</p>
+                <p>Upload data file</p>
                 <form class="dropzone" id="my-great-dropzone"></form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-outline-success" id="submitValuesButton">Submit</button>
+                <button type="button" class="btn btn-outline-success" id="addDataButton">Add</button>
             </div>
         </div>
     </div>
