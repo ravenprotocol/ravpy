@@ -47,6 +47,12 @@ def compute_subgraph(d):
         stopTimer(timeoutId)
         timeoutId = setTimeout(waitInterval,opTimeout)
 
+# Check if the client is connected
+@g.client.on('check_status', namespace="/client")
+def check_status(d):
+    global client
+    client.emit('check_callback', d, namespace='/client')
+    
 def waitInterval():
     global client, timeoutId, ops, opTimeout, initialTimeout
     client = g.client
