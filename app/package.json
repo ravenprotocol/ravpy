@@ -1,0 +1,26 @@
+{
+  "name": "client-app",
+  "version": "1.0.0",
+  "description": "client app",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron ."
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@uppy/core": "^2.1.5",
+    "bootstrap": "^5.1.3",
+    "electron": "^17.0.0",
+    "electron-reload": "^2.0.0-alpha.1",
+    "jquery": "^3.6.0",
+    "python-shell": "^3.0.1",
+    "sweetalert2": "^11.4.4",
+    "web3": "^1.7.0"
+  },
+  "dependencies": {
+    "dropzone": "^6.0.0-beta.2",
+    "web3modal": "^1.9.5"
+  }
+}
