@@ -16,7 +16,7 @@ SOCKET_SERVER_PORT = "9999"
 
 SOCKET_SERVER_URL = "http://{}:{}".format(SOCKET_SERVER_HOST, SOCKET_SERVER_PORT)
 
-BENCHMARK_FILE_NAME = "distributed/benchmark.json"
+BENCHMARK_FILE_NAME = "ravpy/distributed/benchmark.json"
 TYPE = "client"
 
 ENCRYPTION = False
