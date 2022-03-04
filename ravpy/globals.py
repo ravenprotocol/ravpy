@@ -21,10 +21,35 @@ class Globals(object):
     def __init__(self):
         self._client = None
         self._cid = None
+        self._timeoutId = None
+        self._ops = {}
+        self._opTimeout = 6000
+        self._initialTimeout = 1000
+        self._outputs = {}
 
     @property
     def cid(self):
         return self._cid
+
+    @property
+    def timeoutId(self):
+        return self._timeoutId
+
+    @property
+    def ops(self):
+        return self._ops
+
+    @property
+    def opTimeout(self):
+        return self._opTimeout
+
+    @property
+    def initialTimeout(self):
+        return self._initialTimeout
+
+    @property
+    def outputs(self):
+        return self._outputs
 
     @cid.setter
     def cid(self, cid):
