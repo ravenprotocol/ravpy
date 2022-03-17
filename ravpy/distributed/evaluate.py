@@ -13,9 +13,10 @@ ops = g.ops
 opTimeout = g.opTimeout
 initialTimeout = g.initialTimeout
 outputs = g.outputs
-client = None
+client = g.client
 
 @g.client.on('subgraph', namespace="/client")
+# async 
 def compute_subgraph(d):
     global ops, client, timeoutId
     print("Subgraph Received...")
@@ -33,6 +34,7 @@ def compute_subgraph(d):
         }
 
         #Acknowledge op
+        # await 
         client.emit("acknowledge", json.dumps({
                 "op_id": index["op_id"],
                 "message": "Op received"
@@ -43,16 +45,20 @@ def compute_subgraph(d):
         operator = index["operator"]
         if operation_type is not None and operator is not None:
             compute_locally(index)
+            # await compute_locally(index)
 
         stopTimer(timeoutId)
         timeoutId = setTimeout(waitInterval,opTimeout)
 
 # Check if the client is connected
 @g.client.on('check_status', namespace="/client")
+# async 
 def check_status(d):
     global client
+    # await 
     client.emit('check_callback', d, namespace='/client')
     
+# async 
 def waitInterval():
     global client, timeoutId, ops, opTimeout, initialTimeout
     client = g.client
@@ -70,8 +76,10 @@ def waitInterval():
             op["status"] = "failure"
             op["endTime"] = int(time.time() * 1000)
             ops[key] = ops
+            # await 
             emit_error(op["data"], {"message": "OpTimeout error"})
 
+    # await 
     client.emit("get_op", json.dumps({
             "message": "Send me an aop"
     }), namespace="/client")
