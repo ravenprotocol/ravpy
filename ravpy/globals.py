@@ -23,7 +23,7 @@ class Globals(object):
         self._cid = None
         self._timeoutId = None
         self._ops = {}
-        self._opTimeout = 6000
+        self._opTimeout = 2000
         self._initialTimeout = 1000
         self._outputs = {}
 

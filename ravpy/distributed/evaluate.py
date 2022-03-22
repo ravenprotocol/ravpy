@@ -13,7 +13,7 @@ ops = g.ops
 opTimeout = g.opTimeout
 initialTimeout = g.initialTimeout
 outputs = g.outputs
-client = None
+client = g.client
 
 @g.client.on('subgraph', namespace="/client")
 def compute_subgraph(d):
