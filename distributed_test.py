@@ -135,9 +135,6 @@ print("cube ==>",q45())
 arr1d=R.Tensor([1,2,3,4,5,6,7,8,8,9])
 arr2d=R.Tensor([[1,2,3],[5,6,7],[9,10,11]])
 
-# a1=R.expand_dims(arr1d)
-# print("expand dims->",a1())
-
 a1=R.expand_dims(arr1d)
 print("expand dims->",a1())
 
@@ -150,8 +147,7 @@ print(" gather ->",a3())
 a4=R.stack(a)
 print("stack ->",a4())
 
-# a5=R.tile()
-# print("a5 ->"a5())
+
 
 a6=R.find_indices(arr1d,R.Tensor([1,6,3]))
 print("find_indices->",a6())
@@ -165,14 +161,11 @@ print("mean->",a8())
 a9=R.average(arr1d)
 print("average->",a9())
 
-# a10=R.mode(arr1d)
-# print("mode->",a10())
+
 
 a11=R.variance(arr1d)
 print("variance->",a11())
 
-# a12=R.median(arr1d)
-# print("median->",a12())
 
 a13=R.std(arr1d)
 print(" std ->",a13())
@@ -182,7 +175,6 @@ arr1d=R.Tensor([1,2,3,4,5,6,7,8,8,9])
 a14=R.one_hot_encoding(arr1d,depth=4)
 print("one_hot_encoding->",a14())
 
-# a15=R.foreach()
-# print(" foreach ->"a15())
+
 
 algo.end()

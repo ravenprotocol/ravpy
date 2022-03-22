@@ -76,30 +76,12 @@ numpy_functions = {
             'where': 'where',
             #'sign': Operators.SIGN,  
             'foreach': 'foreach',
-            #'one_hot_encoding': Operators.ONE_HOT_ENCODING,
             'set_value': 'set_value',
 
 
             'concat': 'np.concatenate',
             'cube': 'np.cbrt'
     }
-
-op_param_mapping={
-    'sum':{'axis':'axis','weights':'weights'},
-    'add':{'axis':'axis'},
-    'sub':{'axis':'axis'},
-    'concat':{'axis':'axis'},
-    'reverse':{'axis':'axis'},
-    "add": {'':''},
-    "sub": {'':''},
-    "exp":{'':''},
-    "natlog":{'':''},
-    "square":{'':''},
-    "pow":{'':''},
-    "square_root":{'':''},
-    "cube_root":{'':''},
-    "abs":{'':''},
-    "sum":{'':''}}
 
 
 def compute_locally_bm(*args, **kwargs):
@@ -299,14 +281,17 @@ def one_hot_encoding(arr,depth):
 def foreach():
     pass
 
-def set_value():
-    pass
 
 def find_indices(arr,val):
     result=[]
     for i in val:
-        result.append(arr.index(i))
-    return result
+        indices = [_ for _, arr in enumerate(arr) if arr == i]
+        result.append(indices)
+    if len(val) == 1:
+        return indices
+    else:
+        return result
+
 
 
 
