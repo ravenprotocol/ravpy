@@ -40,7 +40,7 @@ numpy_functions = {
             'multiply':'np.multiply',
             'dot': 'np.dot',
             'split': 'np.split', 
-            'reshape':'np.reshape', 
+            'reshape':'reshape', 
             'unique': 'np.unique', 
             'expand_dims':'expand_dims', 
             'inv': 'np.linalg.inv', 
@@ -238,10 +238,10 @@ def slice(tensor,begin=None,size=None):
 
 def gather(tensor,indices):
     result=[]
-    print(tensor,"\n|=====++++===+++====++++====+++===+++===ss|\n")
+    # print(tensor,"\n|=====++++===+++====++++====+++===+++===ss|\n")
     for i in indices:
         result.append(tensor[i])
-    print(result)
+    # print(result)
     return result
     
 def where(a,b,condition=None):
@@ -292,6 +292,11 @@ def find_indices(arr,val):
     else:
         return result
 
-
+def reshape(tens,shape=None):
+    if shape is None:
+        return None
+    else:
+        return np.reshape(tens,newshape=shape)
+    pass
 
 
