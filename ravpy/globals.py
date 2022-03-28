@@ -5,7 +5,7 @@ from .utils import Singleton
 
 
 def get_client(cid):
-    client = socketio.Client(logger=False)
+    client = socketio.Client(logger=False, request_timeout=60)
     try:
         client.connect(url="http://{}:{}?cid={}&type={}".format(SOCKET_SERVER_HOST, SOCKET_SERVER_PORT, cid, TYPE),
                        namespaces=['/client'])
@@ -23,7 +23,7 @@ class Globals(object):
         self._cid = None
         self._timeoutId = None
         self._ops = {}
-        self._opTimeout = 2000
+        self._opTimeout = 3000
         self._initialTimeout = 1000
         self._outputs = {}
 
