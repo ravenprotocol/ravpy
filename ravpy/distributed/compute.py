@@ -40,7 +40,7 @@ numpy_functions = {
             'multiply':'np.multiply',
             'dot': 'np.dot',
             'split': 'np.split', 
-            'reshape':'np.reshape', 
+            'reshape':'reshape', 
             'unique': 'np.unique', 
             'expand_dims':'expand_dims', 
             'inv': 'np.linalg.inv', 
@@ -141,7 +141,12 @@ def compute_locally(payload):
     params=payload['params']
     param_string=""
     for i in params.keys():
-        param_string+=","+i+"="+str(params[i])
+        if type(params[i]) == str:
+            param_string+=","+i+"=\'"+str(params[i])+"\'"
+        else:
+            param_string+=","+i+"="+str(params[i])
+
+    print("\n\n\n",param_string,"\n\n")
 
 
     try:
@@ -238,10 +243,8 @@ def slice(tensor,begin=None,size=None):
 
 def gather(tensor,indices):
     result=[]
-    print(tensor,"\n|=====++++===+++====++++====+++===+++===ss|\n")
     for i in indices:
         result.append(tensor[i])
-    print(result)
     return result
     
 def where(a,b,condition=None):
@@ -278,8 +281,23 @@ def one_hot_encoding(arr,depth):
     return np.squeeze(np.eye(depth)[arr.reshape(-1)])
 
 
-def foreach():
-    pass
+def foreach(val,**kwargs):
+    print(val,kwargs)
+    operator=kwargs.get("operation")
+    print("operation")
+    result=[]
+    paramstr=""
+    del kwargs['operation']
+    for _ in kwargs.keys():
+        paramstr+=","+_+"="+str(kwargs.get(_))
+    for i in val:
+        evalexp="{}({}{})".format(numpy_functions[operator],i,paramstr)
+        res=eval(evalexp)
+        if type(res) is np.ndarray:
+            result.append(res.tolist())
+        else:
+            result.append(res)
+    return result
 
 
 def find_indices(arr,val):
@@ -292,6 +310,11 @@ def find_indices(arr,val):
     else:
         return result
 
-
+def reshape(tens,shape=None):
+    if shape is None:
+        return None
+    else:
+        return np.reshape(tens,newshape=shape)
+    pass
 
 
