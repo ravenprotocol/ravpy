@@ -51,6 +51,7 @@ numpy_functions = {
 
             'find_indices': 'find_indices',
             'shape':'np.shape',
+            'squeeze':'np.squeeze',
 
             #Comparision ops
             'greater': 'np.greater',
@@ -67,7 +68,7 @@ numpy_functions = {
             #statistics
             'mean': 'np.mean',
             'average': 'np.average',
-            'mode': 'stats.mode',
+            'mode': 'mode',
             'variance': 'np.var',
             'std': 'np.std', 
             'percentile': 'np.percentile',
@@ -79,7 +80,7 @@ numpy_functions = {
             'set_value': 'set_value',
 
 
-            'concat': 'np.concatenate',
+            'concat': 'concatenate',
             'cube': 'np.cbrt'
     }
 
@@ -137,7 +138,6 @@ def compute_locally(payload):
 
     op_type = payload["op_type"]
     operator = payload["operator"]
-    # param='params': {'begin': 0, 'size': 25}
     params=payload['params']
     param_string=""
     for i in params.keys():
@@ -165,16 +165,13 @@ def compute_locally(payload):
 
             result = eval(expression)
         print("Result : \n",result)
-        # await 
         emit_result(payload, result)
 
     except Exception as error:
-        # await 
         emit_error(payload, error)
 
 
 
-# async 
 def emit_result(payload, result):
     global outputs, ops
     client = g.client
@@ -184,7 +181,7 @@ def emit_result(payload, result):
         result=result
     
     print("Emit Success")
-    print(payload)
+    print(payload,"\n",type(payload["op_type"]),type(result),type(payload["values"]),type(payload["operator"]),type(payload["op_id"]))
     print(result, json.dumps({
         'op_type': payload["op_type"],
         'result': result,
@@ -196,7 +193,6 @@ def emit_result(payload, result):
 
     outputs[payload["op_id"]] = result
 
-    # await 
     client.emit("op_completed", json.dumps({
         'op_type': payload["op_type"],
         'result': result,
@@ -210,7 +206,7 @@ def emit_result(payload, result):
     op["status"] = "success"
     op["endTime"] = int(time.time() * 1000)
     ops[payload["op_id"]] = op
-# async 
+
 def emit_error(payload, error):
     print("Emit Error")
     print(payload)
@@ -218,7 +214,7 @@ def emit_error(payload, error):
     error=str(error)
     global ops
     client = g.client
-    # await 
+    print(error,payload)
     client.emit("op_completed", json.dumps({
             'op_type': payload["op_type"],
             'result': error,
@@ -281,17 +277,17 @@ def one_hot_encoding(arr,depth):
     return np.squeeze(np.eye(depth)[arr.reshape(-1)])
 
 
-def foreach(val,**kwargs):
-    print(val,kwargs)
+def foreach(val=None,**kwargs):
     operator=kwargs.get("operation")
-    print("operation")
     result=[]
     paramstr=""
     del kwargs['operation']
+    print(kwargs)
     for _ in kwargs.keys():
         paramstr+=","+_+"="+str(kwargs.get(_))
     for i in val:
         evalexp="{}({}{})".format(numpy_functions[operator],i,paramstr)
+        print("\n\nevaluating:",evalexp)
         res=eval(evalexp)
         if type(res) is np.ndarray:
             result.append(res.tolist())
@@ -302,6 +298,7 @@ def foreach(val,**kwargs):
 
 def find_indices(arr,val):
     result=[]
+    
     for i in val:
         indices = [_ for _, arr in enumerate(arr) if arr == i]
         result.append(indices)
@@ -315,6 +312,20 @@ def reshape(tens,shape=None):
         return None
     else:
         return np.reshape(tens,newshape=shape)
-    pass
+
+def mode(arr,axis=0):
+    result=stats.mode(arr,axis=axis)
+    return result.mode
+
+def concatenate(*args,**kwargs):
+    param_string=""
+    for i in kwargs.keys():
+        if type(params[i]) == str:
+            param_string+=","+i+"=\'"+str(params[i])+"\'"
+        else:
+            param_string+=","+i+"="+str(params[i])
+    result=eval("np.concatenate(args"+param_string+")")
+    return result
+     
 
 
