@@ -1,4 +1,6 @@
 import socketio
+import time
+import ast
 
 from .config import SOCKET_SERVER_HOST, SOCKET_SERVER_PORT, TYPE
 from .utils import Singleton
@@ -26,7 +28,8 @@ class Globals(object):
         self._opTimeout = 3000
         self._initialTimeout = 1000
         self._outputs = {}
-
+        self._ftp_client = None
+        
     @property
     def cid(self):
         return self._cid
@@ -68,5 +71,12 @@ class Globals(object):
             self._client = get_client(self._cid)
             return self._client
 
+    @property
+    def ftp_client(self):
+        return self._ftp_client
+
+    @ftp_client.setter
+    def ftp_client(self, ftp_client):
+        self._ftp_client = ftp_client
 
 g = Globals.Instance()
