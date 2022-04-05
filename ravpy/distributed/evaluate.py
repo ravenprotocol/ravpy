@@ -19,7 +19,6 @@ client = g.client
 def compute_subgraph(d):
     global ops, client, timeoutId
     print("Subgraph Received...")
-    print(d)
 
     data = d
 
