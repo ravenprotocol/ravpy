@@ -5,9 +5,10 @@ from ..config import FTP_SERVER_URL
 
 class FTPClient:
     def __init__(self, host, user, passwd):
-        self.ftp = FTP(host)
-        self.ftp.set_pasv(True)
+        self.ftp = FTP(host, timeout=10)
+        # self.ftp.set_debuglevel(2)
         self.ftp.login(user, passwd)
+        self.ftp.set_pasv(True)
 
     def download(self, filename, path):
         print('Downloading')
