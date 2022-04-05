@@ -1,5 +1,6 @@
 from ast import operator
 from distutils.log import error
+import os
 import numpy as np
 import json
 import time
@@ -8,8 +9,11 @@ from scipy import stats
 
 
 from ..globals import g
-from ..utils import get_key
+from ..utils import get_key, dump_data, get_ftp_credentials
+from ..ftp import get_client as get_ftp_client
+from ..ftp import check_credentials as check_credentials
 from ravop import functions
+import ast
 
 outputs = g.outputs
 ops = g.ops
@@ -88,14 +92,14 @@ def compute_locally_bm(*args, **kwargs):
     operator = kwargs.get("operator", None)
     op_type = kwargs.get("op_type", None)
     param_args =kwargs.get("params",None)
-    print("Operator", operator,"Op Type:",op_type)
+    # print("Operator", operator,"Op Type:",op_type)
     if op_type == "unary":
         value1 = args[0]
         t1=time.time()
         params=""
         if param_args is not None:
             params=[op_param_mapping[operator][str(_)] for _ in param_args ]
-        print(params)
+        # print(params)
         expression="{}({})".format(numpy_functions[operator], value1['value'])
         eval(expression)
         t2=time.time()
@@ -113,8 +117,8 @@ def compute_locally_bm(*args, **kwargs):
 def compute_locally(payload):
     global outputs
 
-    print("Computing ",payload["operator"])
-    print(payload)
+    # print("Computing ",payload["operator"])
+    # print(payload)
 
     values = []
     
@@ -133,7 +137,7 @@ def compute_locally(payload):
 
     payload["values"] = values
 
-    print("Payload Values: ", payload["values"])
+    # print("Payload Values: ", payload["values"])
 
     op_type = payload["op_type"]
     operator = payload["operator"]
@@ -159,15 +163,13 @@ def compute_locally(payload):
 
 
             result = eval(expression)
-        print("Result : \n",result)
+        # print("Result : \n",result)
         # await 
         emit_result(payload, result)
 
     except Exception as error:
         # await 
         emit_error(payload, error)
-
-
 
 # async 
 def emit_result(payload, result):
@@ -179,15 +181,21 @@ def emit_result(payload, result):
         result=result
     
     print("Emit Success")
-    print(payload)
-    print(result, json.dumps({
-        'op_type': payload["op_type"],
-        'result': result,
-        'values': payload["values"],
-        'operator': payload["operator"],
-        "op_id": payload["op_id"],
-        "status": "success"
-    }))
+
+    file_path = dump_data(payload['op_id'],result)
+    g.ftp_client.upload(file_path, os.path.basename(file_path))
+    print("\nFile uploaded!", file_path)
+    os.remove(file_path)
+  
+    # print(payload)
+    # print(json.dumps({ #result,
+    #     'op_type': payload["op_type"],
+    #     # 'result': result,
+    #     # 'values': payload["values"],
+    #     'operator': payload["operator"],
+    #     "op_id": payload["op_id"],
+    #     "status": "success"
+    # }))
 
     outputs[payload["op_id"]] = result
 
@@ -195,7 +203,9 @@ def emit_result(payload, result):
     client.emit("op_completed", json.dumps({
         'op_type': payload["op_type"],
         'result': result,
-        'values': payload["values"],
+        # 'values': payload["values"],
+        'file_name': os.path.basename(file_path),
+        'username': g.cid,
         'operator': payload["operator"],
         "op_id": payload["op_id"],
         "status": "success"
@@ -208,7 +218,7 @@ def emit_result(payload, result):
 # async 
 def emit_error(payload, error):
     print("Emit Error")
-    print(payload)
+    # print(payload)
     print(error)
     error=str(error)
     global ops
@@ -217,7 +227,7 @@ def emit_error(payload, error):
     client.emit("op_completed", json.dumps({
             'op_type': payload["op_type"],
             'result': error,
-            'values': payload["values"],
+            # 'values': payload["values"],
             'operator': payload["operator"],
             "op_id": payload["op_id"],
             "status": "failure"
@@ -238,7 +248,7 @@ def slice(tensor,begin=None,size=None):
 
 def gather(tensor,indices):
     result=[]
-    # print(tensor,"\n|=====++++===+++====++++====+++===+++===ss|\n")
+    print(tensor,"\n|=====++++===+++====++++====+++===+++===ss|\n")
     for i in indices:
         result.append(tensor[i])
     # print(result)
