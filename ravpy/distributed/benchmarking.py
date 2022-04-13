@@ -25,6 +25,7 @@ def initialize():
 
 
 def benchmark():
+    initialize()
     client = g.client
     initialTimeout = g.initialTimeout
 
@@ -48,5 +49,4 @@ def benchmark():
     client.emit("benchmark_callback", data=json.dumps(benchmark_results), namespace="/client")
     client.sleep(1)
     setTimeout(waitInterval, initialTimeout)
-    initialize()
     return benchmark_results
