@@ -1,6 +1,6 @@
 import time
 import json
-
+import os
 from ravop import functions
 from .compute import compute_locally, emit_error
 
@@ -21,7 +21,8 @@ def compute_subgraph(d):
     print("Subgraph Received...")
 
     data = d
-
+    results = []
+    
     for index in data:
         ops[index["op_id"]] = {
             "id": index["op_id"],
@@ -41,10 +42,23 @@ def compute_subgraph(d):
         operation_type = index["op_type"]
         operator = index["operator"]
         if operation_type is not None and operator is not None:
-            compute_locally(index)
+            result_payload = compute_locally(index)
+            results.append(result_payload)
 
-        stopTimer(timeoutId)
-        timeoutId = setTimeout(waitInterval,opTimeout)
+        # stopTimer(timeoutId)
+        # timeoutId = setTimeout(waitInterval,opTimeout)  
+
+    client.emit("subgraph_completed", json.dumps(results), namespace="/client")
+    print('Emitted subgraph_completed')
+    
+    stopTimer(timeoutId)
+    timeoutId = setTimeout(waitInterval,opTimeout)
+
+    for ftp_file in g.delete_files_list:
+        g.ftp_client.delete_file(ftp_file)
+
+    g.delete_files_list = []
+
 
 # Check if the client is connected
 @g.client.on('check_status', namespace="/client")
@@ -56,7 +70,6 @@ def waitInterval():
     global client, timeoutId, ops, opTimeout, initialTimeout
     client = g.client
 
-    print("Function Called")
     for key in ops:
         op = ops[key]
 
