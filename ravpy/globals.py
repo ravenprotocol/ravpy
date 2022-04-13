@@ -25,10 +25,11 @@ class Globals(object):
         self._cid = None
         self._timeoutId = None
         self._ops = {}
-        self._opTimeout = 3000
-        self._initialTimeout = 1000
+        self._opTimeout = 50
+        self._initialTimeout = 100
         self._outputs = {}
         self._ftp_client = None
+        self._delete_files_list = []
         
     @property
     def cid(self):
@@ -78,5 +79,13 @@ class Globals(object):
     @ftp_client.setter
     def ftp_client(self, ftp_client):
         self._ftp_client = ftp_client
+
+    @property
+    def delete_files_list(self):
+        return self._delete_files_list
+
+    @delete_files_list.setter
+    def delete_files_list(self, delete_files_list):
+        self._delete_files_list = delete_files_list
 
 g = Globals.Instance()
