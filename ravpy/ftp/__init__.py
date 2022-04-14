@@ -1,5 +1,7 @@
 from ftplib import FTP
 
+from requests import delete
+
 from ..config import FTP_SERVER_URL
 
 
@@ -20,6 +22,9 @@ class FTPClient:
 
     def list_server_files(self):
         self.ftp.retrlines('LIST')
+
+    def delete_file(self, path):
+        self.ftp.delete(path)
 
     def close(self):
         self.ftp.quit()

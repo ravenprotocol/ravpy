@@ -152,7 +152,7 @@ def setTimeout(fn, ms, *args, **kwargs):
     return timeoutId
 
 def stopTimer(timeoutId):
-    print("Timer stopped")
+    # print("Timer stopped")
     if timeoutId is not None:
         timeoutId.cancel()
 
@@ -166,3 +166,9 @@ def dump_data(op_id, value):
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     np.save(file_path, value)
     return file_path
+
+def load_data(path):
+    """
+    Load ndarray from file
+    """
+    return np.load(path, allow_pickle=True)

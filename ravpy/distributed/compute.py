@@ -9,9 +9,10 @@ from scipy import stats
 
 
 from ..globals import g
-from ..utils import get_key, dump_data, get_ftp_credentials
+from ..utils import get_key, dump_data, get_ftp_credentials, load_data
 from ..ftp import get_client as get_ftp_client
 from ..ftp import check_credentials as check_credentials
+from ..config import FTP_DOWNLOAD_FILES_FOLDER
 from ravop import functions
 import ast
 
@@ -119,18 +120,34 @@ def compute_locally(payload):
     global outputs
 
     # print("Computing ",payload["operator"])
-    # print(payload)
+    # print('\n\nPAYLOAD: ',payload)
 
     values = []
     
 
     for i in range(len(payload["values"])):
         if "value" in payload["values"][i].keys():
-            print("From server")
-            values.append(payload["values"][i]["value"])
+            # print("From server")
+            server_file_path = payload["values"][i]["path"]
+
+            download_path = os.path.join(FTP_DOWNLOAD_FILES_FOLDER,os.path.basename(payload["values"][i]["path"]))
+
+
+            g.ftp_client.download(download_path, os.path.basename(server_file_path))
+
+
+            value = load_data(download_path).tolist()
+            print('Loaded Data Value: ',value)
+            values.append(value)
+
+            if os.path.basename(server_file_path) not in g.delete_files_list and payload["values"][i]["to_delete"] == 'True':
+                g.delete_files_list.append(os.path.basename(server_file_path))
+
+            if os.path.exists(download_path):
+                os.remove(download_path)
 
         elif "op_id" in payload["values"][i].keys():
-            print("From client")
+            # print("From client")
             try:
                 values.append(outputs[payload['values'][i]['op_id']])
             except Exception as e:
@@ -150,8 +167,6 @@ def compute_locally(payload):
         else:
             param_string+=","+i+"="+str(params[i])
 
-    print("\n\n\n",param_string,"\n\n")
-
 
     try:
         if op_type == "unary":
@@ -168,55 +183,47 @@ def compute_locally(payload):
 
 
             result = eval(expression)
-        print("Result : \n",result)
-        emit_result(payload, result)
+        # print("Result : \n",result)
+        file_path = upload_result(payload, result)
+
+        outputs[payload["op_id"]] = result.tolist()
+
+        op = ops[payload["op_id"]]
+        op["status"] = "success"
+        op["endTime"] = int(time.time() * 1000)
+        ops[payload["op_id"]] = op
+
+        return json.dumps({
+            'op_type': payload["op_type"],
+            'file_name': os.path.basename(file_path),
+            'username': g.cid,
+            'operator': payload["operator"],
+            "op_id": payload["op_id"],
+            "status": "success"
+        })
 
     except Exception as error:
+        print('Error: ', error)
         emit_error(payload, error)
 
 
-def emit_result(payload, result):
+def upload_result(payload, result):
     global outputs, ops
-    client = g.client
     try:
         result = result.tolist()
     except:
         result=result
     
-    print("Emit Success")
+    # print("Emit Success")
 
     file_path = dump_data(payload['op_id'],result)
+
     g.ftp_client.upload(file_path, os.path.basename(file_path))
     print("\nFile uploaded!", file_path)
     os.remove(file_path)
   
-    # print(payload)
-    # print(json.dumps({ #result,
-    #     'op_type': payload["op_type"],
-    #     # 'result': result,
-    #     # 'values': payload["values"],
-    #     'operator': payload["operator"],
-    #     "op_id": payload["op_id"],
-    #     "status": "success"
-    # }))
-
-    outputs[payload["op_id"]] = result
-
-    client.emit("op_completed", json.dumps({
-        'op_type': payload["op_type"],
-        'result': result,
-        # 'values': payload["values"],
-        'file_name': os.path.basename(file_path),
-        'username': g.cid,
-        'operator': payload["operator"],
-        "op_id": payload["op_id"],
-        "status": "success"
-    }), namespace='/client')
-
-    op = ops[payload["op_id"]]
-    op["status"] = "success"
-    op["endTime"] = int(time.time() * 1000)
-    ops[payload["op_id"]] = op
+    return file_path
+    
 
 def emit_error(payload, error):
     print("Emit Error")
@@ -228,8 +235,7 @@ def emit_error(payload, error):
     print(error,payload)
     client.emit("op_completed", json.dumps({
             'op_type': payload["op_type"],
-            'result': error,
-            # 'values': payload["values"],
+            'error': error,
             'operator': payload["operator"],
             "op_id": payload["op_id"],
             "status": "failure"
