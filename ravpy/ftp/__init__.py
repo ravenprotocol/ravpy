@@ -7,18 +7,18 @@ from ..config import FTP_SERVER_URL
 
 class FTPClient:
     def __init__(self, host, user, passwd):
-        self.ftp = FTP(host, timeout=10)
+        self.ftp = FTP(host)
         # self.ftp.set_debuglevel(2)
         self.ftp.login(user, passwd)
         self.ftp.set_pasv(True)
 
     def download(self, filename, path):
         print('Downloading')
-        self.ftp.retrbinary('RETR ' + path, open(filename, 'wb').write)
+        self.ftp.retrbinary('RETR ' + path, open(filename, 'wb').write, blocksize=1024*1000)
         print("Downloaded")
 
     def upload(self, filename, path):
-        self.ftp.storbinary('STOR ' + path, open(filename, 'rb'))
+        self.ftp.storbinary('STOR ' + path, open(filename, 'rb'), blocksize=1024*1000)
 
     def list_server_files(self):
         self.ftp.retrlines('LIST')
