@@ -9,34 +9,33 @@ from ..utils import setTimeout, stopTimer
 from ..globals import g
 
 timeoutId = g.timeoutId
-ops = g.ops
 opTimeout = g.opTimeout
 initialTimeout = g.initialTimeout
-outputs = g.outputs
 client = g.client
 
 @g.client.on('subgraph', namespace="/client")
 def compute_subgraph(d):
-    global ops, client, timeoutId
+    global client, timeoutId
     print("Subgraph Received...")
+    g.has_subgraph = True
 
     data = d
     results = []
     
     for index in data:
-        ops[index["op_id"]] = {
-            "id": index["op_id"],
-            "status": "pending",
-            "startTime": int(time.time() * 1000),
-            "endTime": None,
-            "data": index
-        }
+        # g.ops[index["op_id"]] = {
+        #     "id": index["op_id"],
+        #     "status": "pending",
+        #     "startTime": int(time.time() * 1000),
+        #     "endTime": None,
+        #     "data": index
+        # }
 
-        #Acknowledge op
-        client.emit("acknowledge", json.dumps({
-                "op_id": index["op_id"],
-                "message": "Op received"
-        }), namespace="/client")
+        # #Acknowledge op
+        # client.emit("acknowledge", json.dumps({
+        #         "op_id": index["op_id"],
+        #         "message": "Op received"
+        # }), namespace="/client")
 
         #Perform
         operation_type = index["op_type"]
@@ -50,6 +49,8 @@ def compute_subgraph(d):
 
     client.emit("subgraph_completed", json.dumps(results), namespace="/client")
     print('Emitted subgraph_completed')
+
+    g.has_subgraph = False
     
     stopTimer(timeoutId)
     timeoutId = setTimeout(waitInterval,opTimeout)
@@ -58,7 +59,8 @@ def compute_subgraph(d):
         g.ftp_client.delete_file(ftp_file)
 
     g.delete_files_list = []
-
+    g.outputs = {}
+    # g.ops = {}
 
 # Check if the client is connected
 @g.client.on('check_status', namespace="/client")
@@ -67,26 +69,27 @@ def check_status(d):
     client.emit('check_callback', d, namespace='/client')
     
 def waitInterval():
-    global client, timeoutId, ops, opTimeout, initialTimeout
+    global client, timeoutId, opTimeout, initialTimeout
     client = g.client
 
-    for key in ops:
-        op = ops[key]
+    # for key in g.ops:
+    #     op = g.ops[key]
 
-        if op["status"] == "pending" or int(time.time() * 1000) - op["startTime"] < opTimeout:
-            stopTimer(timeoutId)
-            timeoutId = setTimeout(waitInterval,opTimeout)
-            return
+    #     if op["status"] == "pending" or int(time.time() * 1000) - op["startTime"] < opTimeout:
+    #         stopTimer(timeoutId)
+    #         timeoutId = setTimeout(waitInterval,opTimeout)
+    #         return
         
-        if op["status"] == "pending" and int(time.time() * 1000) - op["startTime"] > opTimeout:
-            op["status"] = "failure"
-            op["endTime"] = int(time.time() * 1000)
-            ops[key] = ops
-            emit_error(op["data"], {"message": "OpTimeout error"})
+    #     if op["status"] == "pending" and int(time.time() * 1000) - op["startTime"] > opTimeout:
+    #         op["status"] = "failure"
+    #         op["endTime"] = int(time.time() * 1000)
+    #         g.ops[key] = g.ops
+    #         emit_error(op["data"], {"message": "OpTimeout error"})
 
-    client.emit("get_op", json.dumps({
-            "message": "Send me an aop"
-    }), namespace="/client")
+    if not g.has_subgraph:
+        client.emit("get_op", json.dumps({
+                "message": "Send me an aop"
+        }), namespace="/client")
 
     stopTimer(timeoutId)
     timeoutId = setTimeout(waitInterval,opTimeout)
