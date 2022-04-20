@@ -30,6 +30,7 @@ class Globals(object):
         self._outputs = {}
         self._ftp_client = None
         self._delete_files_list = []
+        self._has_subgraph = False
         
     @property
     def cid(self):
@@ -59,6 +60,10 @@ class Globals(object):
     def cid(self, cid):
         self._cid = cid
 
+    @ops.setter
+    def ops(self, ops):
+        self._ops = ops
+
     @property
     def client(self):
         if self._cid is None:
@@ -87,5 +92,17 @@ class Globals(object):
     @delete_files_list.setter
     def delete_files_list(self, delete_files_list):
         self._delete_files_list = delete_files_list
+
+    @property
+    def has_subgraph(self):
+        return self._has_subgraph
+
+    @has_subgraph.setter
+    def has_subgraph(self, has_subgraph):
+        self._has_subgraph = has_subgraph
+
+    @outputs.setter
+    def outputs(self, outputs):
+        self._outputs = outputs
 
 g = Globals.Instance()
