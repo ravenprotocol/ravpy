@@ -1,11 +1,13 @@
 import socketio
+import time
+import ast
 
 from .config import SOCKET_SERVER_HOST, SOCKET_SERVER_PORT, TYPE
 from .utils import Singleton
 
 
 def get_client(cid):
-    client = socketio.Client(logger=False)
+    client = socketio.Client(logger=False, request_timeout=60)
     try:
         client.connect(url="http://{}:{}?cid={}&type={}".format(SOCKET_SERVER_HOST, SOCKET_SERVER_PORT, cid, TYPE),
                        namespaces=['/client'])
@@ -23,10 +25,13 @@ class Globals(object):
         self._cid = None
         self._timeoutId = None
         self._ops = {}
-        self._opTimeout = 6000
-        self._initialTimeout = 1000
+        self._opTimeout = 50
+        self._initialTimeout = 100
         self._outputs = {}
-
+        self._ftp_client = None
+        self._delete_files_list = []
+        self._has_subgraph = False
+        
     @property
     def cid(self):
         return self._cid
@@ -55,6 +60,10 @@ class Globals(object):
     def cid(self, cid):
         self._cid = cid
 
+    @ops.setter
+    def ops(self, ops):
+        self._ops = ops
+
     @property
     def client(self):
         if self._cid is None:
@@ -68,5 +77,32 @@ class Globals(object):
             self._client = get_client(self._cid)
             return self._client
 
+    @property
+    def ftp_client(self):
+        return self._ftp_client
+
+    @ftp_client.setter
+    def ftp_client(self, ftp_client):
+        self._ftp_client = ftp_client
+
+    @property
+    def delete_files_list(self):
+        return self._delete_files_list
+
+    @delete_files_list.setter
+    def delete_files_list(self, delete_files_list):
+        self._delete_files_list = delete_files_list
+
+    @property
+    def has_subgraph(self):
+        return self._has_subgraph
+
+    @has_subgraph.setter
+    def has_subgraph(self, has_subgraph):
+        self._has_subgraph = has_subgraph
+
+    @outputs.setter
+    def outputs(self, outputs):
+        self._outputs = outputs
 
 g = Globals.Instance()

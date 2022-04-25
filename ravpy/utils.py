@@ -9,7 +9,7 @@ from .config import ENCRYPTION
 if ENCRYPTION:
     import tenseal as ts
 
-from .config import BASE_DIR, CONTEXT_FOLDER, SOCKET_SERVER_URL
+from .config import BASE_DIR, CONTEXT_FOLDER, SOCKET_SERVER_URL, FTP_TEMP_FILES_FOLDER
 
 from threading import Timer
 
@@ -155,6 +155,25 @@ def setTimeout(fn, ms, *args, **kwargs):
 
 
 def stopTimer(timeoutId):
-    print("Timer stopped")
+    # print("Timer stopped")
     if timeoutId is not None:
         timeoutId.cancel()
+
+
+def dump_data(op_id, value):
+    """
+    Dump ndarray to file
+    """
+    file_path = os.path.join(FTP_TEMP_FILES_FOLDER, "temp_{}.npy".format(op_id))
+    if os.path.exists(file_path):
+        os.remove(file_path)
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    np.save(file_path, value)
+    return file_path
+
+
+def load_data(path):
+    """
+    Load ndarray from file
+    """
+    return np.load(path, allow_pickle=True)
