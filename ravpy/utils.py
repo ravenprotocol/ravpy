@@ -11,7 +11,8 @@ if ENCRYPTION:
 
 from .config import BASE_DIR, CONTEXT_FOLDER, SOCKET_SERVER_URL
 
-from threading import Timer  
+from threading import Timer
+
 
 class Singleton:
     def __init__(self, cls):
@@ -145,11 +146,13 @@ def apply_rules(data_columns, rules, final_column_names):
 
         data_silo.append(data_column_values)
     return data_silo
- 
-def setTimeout(fn, ms, *args, **kwargs): 
-    timeoutId = Timer(ms / 1000., fn, args=args, kwargs=kwargs) 
-    timeoutId.start() 
+
+
+def setTimeout(fn, ms, *args, **kwargs):
+    timeoutId = Timer(ms / 1000., fn, args=args, kwargs=kwargs)
+    timeoutId.start()
     return timeoutId
+
 
 def stopTimer(timeoutId):
     print("Timer stopped")

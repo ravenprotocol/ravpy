@@ -11,7 +11,7 @@ PARAMS_DIR = os.path.join(BASE_DIR, "params")
 os.makedirs(CONTEXT_FOLDER, exist_ok=True)
 os.makedirs(PARAMS_DIR, exist_ok=True)
 
-SOCKET_SERVER_HOST = "localhost"
+SOCKET_SERVER_HOST = "34.100.186.12"
 SOCKET_SERVER_PORT = "9999"
 
 SOCKET_SERVER_URL = "http://{}:{}".format(SOCKET_SERVER_HOST, SOCKET_SERVER_PORT)

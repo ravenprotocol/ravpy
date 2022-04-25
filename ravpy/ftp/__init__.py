@@ -6,6 +6,10 @@ from ..config import FTP_SERVER_URL
 class FTPClient:
     def __init__(self, host, user, passwd):
         self.ftp = FTP(host)
+        print(self.ftp)
+        print(self.ftp.welcome)
+        print(self.ftp.connect(host="", port=21))
+        print(self.ftp)
         self.ftp.set_pasv(True)
         self.ftp.login(user, passwd)
 
@@ -25,7 +29,6 @@ class FTPClient:
 
 
 def get_client(username, password):
-    print("FTP User credentials:", FTP_SERVER_URL, username, password)
     return FTPClient(host=FTP_SERVER_URL, user=username, passwd=password)
 
 

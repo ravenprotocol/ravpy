@@ -9,6 +9,7 @@ from ravpy.globals import g
 from ravpy.utils import get_graphs, print_graphs, get_graph, get_subgraph_ops, apply_rules
 
 if __name__ == '__main__':
+    print("Executed")
     argparser = ArgumentParser()
     argparser.add_argument("-a", "--action", type=str, help="Enter action", default=None)
     argparser.add_argument("-c", "--cid", type=str, help="Enter client id", default=None)
@@ -16,13 +17,17 @@ if __name__ == '__main__':
     argparser.add_argument("-d", "--data", type=str, help="Data to use", default=None)
     argparser.add_argument("-f", "--file_path", type=str, help="File path containing samples to use", default=None)
 
+    print(argparser.parse_args())
+
     if len(sys.argv) == 1:
+        print("Args missing")
         argparser.print_help(sys.stderr)
         sys.exit(1)
 
     args = argparser.parse_args()
 
     if args.action is None:
+        print("Enter action")
         raise Exception("Enter action")
 
     if args.action == "list":
@@ -31,9 +36,11 @@ if __name__ == '__main__':
 
     elif args.action == "participate":
         if args.cid is None:
+            print("Client id is required")
             raise Exception("Client id is required")
 
         if args.graph_id is None:
+            print("Enter id of the graph to join")
             raise Exception("Enter id of the graph to join")
 
         print("Let's participate")

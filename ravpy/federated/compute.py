@@ -14,11 +14,9 @@ logger = logging.getLogger(__name__)
 
 
 def compute(cid, data_silo, graph, subgraph_ops, final_column_names):
-    print("Get ftp credentials")
     credentials = get_ftp_credentials(cid)
     if credentials is None:
         raise Exception("Error")
-    print("FTP credentials: {}".format(credentials['ftp_credentials']))
 
     ftp_client = get_client(**ast.literal_eval(credentials['ftp_credentials']))
 

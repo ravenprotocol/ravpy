@@ -1,20 +1,54 @@
-const socket_server_url = 'ws://' + RAVSOCK_SERVER_URL + ':' + RAVSOCK_SERVER_PORT + '/' + CLIENT_TYPE;
+let attemptsMade = 0;
+let isConnected = false;
+let bt = $("#connectDisconnectButton");
 
-socket = io(socket_server_url, {
+socket = io(SOCKET_SERVER_URL, {
     query: {
         "type": CLIENT_TYPE,
         "cid": 4
-    }
+    },
+    autoConnect: false,
+    reconnectionAttempts: RECONNECTION_ATTEMPTS,
+    reconnection: RECONNECTION,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax : 5000
 });
 
 // On connection started
 socket.on('connect', function (d) {
     console.log("Connected");
+    changeConnectDisconnectButton("connected");
+
+    // reset attempts made
+    attemptsMade = 0;
+    isConnected = true;
+
+    showGraphs();
 });
 
 // On connection closed
 socket.on("disconnect", function (d) {
     console.log("Disconnected");
+    changeConnectDisconnectButton("disconnected");
+
+    // reset attempts made
+    attemptsMade = 0;
+    isConnected = false;
+
+    showGraphs();
+    $("#activeGraphs").fadeOut("medium");
+    $("#pastGraphs").fadeOut("medium");
+});
+
+socket.on("connect_error", () => {
+    console.log("connection_error");
+    attemptsMade += 1;
+    if(attemptsMade === 5){
+        Swal.fire("Oops!", "Connection error", "error");
+        changeConnectDisconnectButton("disconnected");
+    }
+
+    isConnected = false;
 });
 
 // Check if the client is connected
@@ -32,3 +66,35 @@ socket.on("ping", function (message) {
         "message": "PONG"
     }));
 });
+
+$(document).on('click', '#connectDisconnectButton', function () {
+    console.log("Log");
+    if ($(this).data('status') === "connected") {
+        socket.disconnect();
+    } else if ($(this).data('status') === "disconnected") {
+        socket.connect();
+        changeConnectDisconnectButton("connecting");
+    }
+});
+
+function changeConnectDisconnectButton(status) {
+    if(status === "connected"){
+        bt.text("Disconnect");
+        bt.removeAttr("class");
+        bt.attr('class', '');
+        bt.addClass("btn btn-outline-danger");
+        bt.data('status', "connected");
+    }else if(status === "disconnected"){
+        bt.text("Connect");
+        bt.removeAttr("class");
+        bt.attr('class', '');
+        bt.addClass("btn btn-outline-primary");
+        bt.data('status', "disconnected");
+    }else if(status === "connecting"){
+        bt.text("Connecting...");
+        bt.removeAttr("class");
+        bt.attr('class', '');
+        bt.addClass("btn btn-outline-warning");
+        bt.data('status', "connecting");
+    }
+}
