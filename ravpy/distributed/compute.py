@@ -29,11 +29,11 @@ numpy_functions = {
             "square_root":"np.sqrt",
             "cube_root":"np.cbrt",
             "abs":"np.abs",
-            "sum":"np.sum",
+            "sum":"sum",
             "sort":"np.sort",
             "reverse":"np.flip",
             "min":"np.min",
-            "max":"np.max",
+            "max":"max",
             "argmax":"np.argmax",
             "argmin":"np.argmin",
             "transpose":"np.transpose",
@@ -81,7 +81,11 @@ numpy_functions = {
             #'sign': Operators.SIGN,  
             'foreach': 'foreach',
             'set_value': 'set_value',
-
+            'clip': 'clip',
+            'random_uniform': 'np.random.uniform',
+            'prod': 'np.prod',
+            'flatten': 'flatten',
+            'ravel': 'np.ravel',
 
             'concat': 'concatenate',
             'cube': 'np.cbrt'
@@ -114,7 +118,7 @@ def compute_locally_bm(*args, **kwargs):
         return t2-t1
 
 # async 
-def compute_locally(payload):
+def compute_locally(payload, subgraph_id, graph_id):
 
     # print("Computing ",payload["operator"])
     # print('\n\nPAYLOAD: ',payload)
@@ -125,32 +129,36 @@ def compute_locally(payload):
     for i in range(len(payload["values"])):
         if "value" in payload["values"][i].keys():
             # print("From server")
-            server_file_path = payload["values"][i]["path"]
+            if "path" not in payload["values"][i].keys():
+                values.append(payload["values"][i]["value"])
+            
+            else:
+                server_file_path = payload["values"][i]["path"]
 
-            download_path = os.path.join(FTP_DOWNLOAD_FILES_FOLDER,os.path.basename(payload["values"][i]["path"]))
+                download_path = os.path.join(FTP_DOWNLOAD_FILES_FOLDER,os.path.basename(payload["values"][i]["path"]))
 
-            try:
-                g.ftp_client.download(download_path, os.path.basename(server_file_path))
-            except Exception as error:
-                print('Error: ', error)
-                emit_error(payload, error)
+                try:
+                    g.ftp_client.download(download_path, os.path.basename(server_file_path))
+                except Exception as error:
+                    print('Error: ', error)
+                    emit_error(payload, error, subgraph_id, graph_id)
 
-            value = load_data(download_path).tolist()
-            print('Loaded Data Value: ',value)
-            values.append(value)
+                value = load_data(download_path).tolist()
+                print('Loaded Data Value: ',value)
+                values.append(value)
 
-            if os.path.basename(server_file_path) not in g.delete_files_list and payload["values"][i]["to_delete"] == 'True':
-                g.delete_files_list.append(os.path.basename(server_file_path))
+                if os.path.basename(server_file_path) not in g.delete_files_list and payload["values"][i]["to_delete"] == 'True':
+                    g.delete_files_list.append(os.path.basename(server_file_path))
 
-            if os.path.exists(download_path):
-                os.remove(download_path)
+                if os.path.exists(download_path):
+                    os.remove(download_path)
 
         elif "op_id" in payload["values"][i].keys():
             # print("From client")
             try:
                 values.append(g.outputs[payload['values'][i]['op_id']])
             except Exception as e:
-                emit_error(payload,e)
+                emit_error(payload,e, subgraph_id, graph_id)
 
     payload["values"] = values
 
@@ -182,31 +190,56 @@ def compute_locally(payload):
 
 
             result = eval(expression)
-        # print("Result : \n",result)
-        file_path = upload_result(payload, result)
+        
+        if not isinstance(result, np.ndarray):
+            result = np.array(result)
 
-        g.outputs[payload["op_id"]] = result.tolist()
+        result_byte_size = result.size * result.itemsize
 
-        # op = g.ops[payload["op_id"]]
-        # op["status"] = "success"
-        # op["endTime"] = int(time.time() * 1000)
-        # g.ops[payload["op_id"]] = op
+        if result_byte_size < (30 * 1000000)//10000:
+            try:
+                result = result.tolist()
+            except:
+                result = result
+        
+            g.outputs[payload["op_id"]] = result
 
-        return json.dumps({
+            return json.dumps({
             'op_type': payload["op_type"],
-            'file_name': os.path.basename(file_path),
+            'result': result,
             'username': g.cid,
             'operator': payload["operator"],
             "op_id": payload["op_id"],
             "status": "success"
-        })
+            })
+
+        else:        
+
+            file_path = upload_result(payload, result)
+
+            g.outputs[payload["op_id"]] = result.tolist()
+
+            # op = g.ops[payload["op_id"]]
+            # op["status"] = "success"
+            # op["endTime"] = int(time.time() * 1000)
+            # g.ops[payload["op_id"]] = op
+
+            return json.dumps({
+                'op_type': payload["op_type"],
+                'file_name': os.path.basename(file_path),
+                'username': g.cid,
+                'operator': payload["operator"],
+                "op_id": payload["op_id"],
+                "status": "success"
+            })
 
     except Exception as error:
         print('Error: ', error)
-        emit_error(payload, error)
+        emit_error(payload, error, subgraph_id, graph_id)
 
 
 def upload_result(payload, result):
+    result_size = result.size * result.itemsize
     try:
         result = result.tolist()
     except:
@@ -217,13 +250,13 @@ def upload_result(payload, result):
     file_path = dump_data(payload['op_id'],result)
     g.ftp_client.upload(file_path, os.path.basename(file_path))
     
-    print("\nFile uploaded!", file_path)
+    print("\nFile uploaded!", file_path, ' Size: ', result_size)
     os.remove(file_path)
   
     return file_path
     
 
-def emit_error(payload, error):
+def emit_error(payload, error, subgraph_id, graph_id):
     print("Emit Error")
     # print(payload)
     print(error)
@@ -235,7 +268,9 @@ def emit_error(payload, error):
             'error': error,
             'operator': payload["operator"],
             "op_id": payload["op_id"],
-            "status": "failure"
+            "status": "failure",
+            "subgraph_id": subgraph_id,
+            "graph_id": graph_id
     }), namespace="/client")
 
     # op = g.ops[payload["op_id"]]
@@ -243,13 +278,24 @@ def emit_error(payload, error):
     # op["endTime"] = int(time.time() * 1000)
     # g.ops[payload["op_id"]] = op
 
-    for ftp_file in g.delete_files_list:
-        g.ftp_client.delete_file(ftp_file)
+    try:
+        for ftp_file in g.delete_files_list:
+            g.ftp_client.delete_file(ftp_file)
+    except Exception as e:
+        client.emit("op_completed", json.dumps({
+            'op_type': payload["op_type"],
+            'error': error,
+            'operator': payload["operator"],
+            "op_id": payload["op_id"],
+            "status": "failure"
+            }), namespace="/client")
+
+        g.delete_files_list = []
+        g.outputs = {}
+        g.has_subgraph = False
 
     g.delete_files_list = []
     g.outputs = {}
-    # g.ops = {}
-
     g.has_subgraph = False
 
 
@@ -268,9 +314,38 @@ def where(a,b,condition=None):
     if condition is None:
         raise Exception("condition is missing")
     else:
-        result=np.where(a,condition,b)
+        result=np.where(condition,a,b)
     return result
- 
+
+def clip(a,lower_limit=None,upper_limit=None):
+    if lower_limit is None:
+        raise Exception("lower limit is missing")
+    elif upper_limit is None:
+        raise Exception("upper limit is missing")
+    else:
+        result = np.clip(a,lower_limit,upper_limit)
+    return result
+
+def max(a,axis=None,keepdims=False):
+    if str(keepdims) == 'True':
+        keepdims = True
+    else:
+        keepdims = False
+    result=np.max(a,axis=axis,keepdims=keepdims)
+    return result
+
+def sum(a,axis=None,keepdims=False):
+    if str(keepdims) == 'True':
+        keepdims = True
+    else:
+        keepdims = False
+    result=np.sum(a,axis=axis,keepdims=keepdims)
+    return result
+
+def flatten(a):
+    a = np.array(a)
+    return a.flatten()
+
 def split(arr,numOrSizeSplits=None,axis=None):
     result=np.split(arr,numOrSizeSplits,axis=axis)
     return result
