@@ -31,6 +31,8 @@ class Globals(object):
         self._ftp_client = None
         self._delete_files_list = []
         self._has_subgraph = False
+        self._ftp_upload_blocksize = 8192
+        self._ftp_download_blocksize = 8192
         
     @property
     def cid(self):
@@ -55,6 +57,22 @@ class Globals(object):
     @property
     def outputs(self):
         return self._outputs
+
+    @property
+    def ftp_upload_blocksize(self):
+        return self._ftp_upload_blocksize
+
+    @ftp_upload_blocksize.setter
+    def ftp_upload_blocksize(self, ftp_upload_blocksize):
+        self._ftp_upload_blocksize = ftp_upload_blocksize
+
+    @property
+    def ftp_download_blocksize(self):
+        return self._ftp_download_blocksize
+
+    @ftp_download_blocksize.setter
+    def ftp_download_blocksize(self, ftp_download_blocksize):
+        self._ftp_download_blocksize = ftp_download_blocksize
 
     @cid.setter
     def cid(self, cid):
