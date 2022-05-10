@@ -16,12 +16,13 @@ client = g.client
 @g.client.on('subgraph', namespace="/client")
 def compute_subgraph(d):
     global client, timeoutId
-    print("Subgraph Received...")
+    print("Received Subgraph : ",d["subgraph_id"]," of Graph : ",d["graph_id"])
     g.has_subgraph = True
-
-    data = d
+    subgraph_id = d["subgraph_id"]
+    graph_id = d["graph_id"]
+    data = d["payloads"]
     results = []
-    
+    compute_success = True
     for index in data:
         # g.ops[index["op_id"]] = {
         #     "id": index["op_id"],
@@ -41,19 +42,25 @@ def compute_subgraph(d):
         operation_type = index["op_type"]
         operator = index["operator"]
         if operation_type is not None and operator is not None:
-            result_payload = compute_locally(index)
-            results.append(result_payload)
+            result_payload = compute_locally(index, subgraph_id, graph_id)
+            if result_payload is not None:
+                results.append(result_payload)
+            else:
+                compute_success = False
+                break
 
         # stopTimer(timeoutId)
         # timeoutId = setTimeout(waitInterval,opTimeout)  
-
-    client.emit("subgraph_completed", json.dumps(results), namespace="/client")
-    print('Emitted subgraph_completed')
+    if compute_success:
+        emit_result_data = {"subgraph_id": d["subgraph_id"],"graph_id":d["graph_id"],"results":results}
+        client.emit("subgraph_completed", json.dumps(emit_result_data), namespace="/client")
+        print('Emitted subgraph_completed')
 
     g.has_subgraph = False
     
     stopTimer(timeoutId)
     timeoutId = setTimeout(waitInterval,opTimeout)
+
 
     for ftp_file in g.delete_files_list:
         g.ftp_client.delete_file(ftp_file)
