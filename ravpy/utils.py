@@ -11,8 +11,7 @@ if ENCRYPTION:
 
 from .config import BASE_DIR, CONTEXT_FOLDER, SOCKET_SERVER_URL, FTP_TEMP_FILES_FOLDER
 
-from threading import Timer
-
+from threading import Timer  
 
 class Singleton:
     def __init__(self, cls):
@@ -146,19 +145,16 @@ def apply_rules(data_columns, rules, final_column_names):
 
         data_silo.append(data_column_values)
     return data_silo
-
-
-def setTimeout(fn, ms, *args, **kwargs):
-    timeoutId = Timer(ms / 1000., fn, args=args, kwargs=kwargs)
-    timeoutId.start()
+ 
+def setTimeout(fn, ms, *args, **kwargs): 
+    timeoutId = Timer(ms / 1000., fn, args=args, kwargs=kwargs) 
+    timeoutId.start() 
     return timeoutId
-
 
 def stopTimer(timeoutId):
     # print("Timer stopped")
     if timeoutId is not None:
         timeoutId.cancel()
-
 
 def dump_data(op_id, value):
     """
@@ -170,7 +166,6 @@ def dump_data(op_id, value):
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     np.save(file_path, value)
     return file_path
-
 
 def load_data(path):
     """
