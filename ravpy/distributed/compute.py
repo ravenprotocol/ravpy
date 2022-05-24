@@ -53,8 +53,9 @@ numpy_functions = {
             'slice': 'slice',
 
             'find_indices': 'find_indices',
-            'shape':'np.shape',
+            'shape':'shape',#np.shape
             'squeeze':'np.squeeze',
+            'pad':'pad',
 
             #Comparision ops
             'greater': 'np.greater',
@@ -120,62 +121,48 @@ def compute_locally_bm(*args, **kwargs):
 # async 
 def compute_locally(payload, subgraph_id, graph_id):
 
-    # print("Computing ",payload["operator"])
-    # print('\n\nPAYLOAD: ',payload)
-
-    values = []
-    
-
-    for i in range(len(payload["values"])):
-        if "value" in payload["values"][i].keys():
-            # print("From server")
-            if "path" not in payload["values"][i].keys():
-                values.append(payload["values"][i]["value"])
-            
-            else:
-                server_file_path = payload["values"][i]["path"]
-
-                download_path = os.path.join(FTP_DOWNLOAD_FILES_FOLDER,os.path.basename(payload["values"][i]["path"]))
-
-                try:
-                    g.ftp_client.download(download_path, os.path.basename(server_file_path))
-                except Exception as error:
-                    print('Error: ', error)
-                    emit_error(payload, error, subgraph_id, graph_id)
-
-                value = load_data(download_path).tolist()
-                print('Loaded Data Value: ',value)
-                values.append(value)
-
-                if os.path.basename(server_file_path) not in g.delete_files_list and payload["values"][i]["to_delete"] == 'True':
-                    g.delete_files_list.append(os.path.basename(server_file_path))
-
-                if os.path.exists(download_path):
-                    os.remove(download_path)
-
-        elif "op_id" in payload["values"][i].keys():
-            # print("From client")
-            try:
-                values.append(g.outputs[payload['values'][i]['op_id']])
-            except Exception as e:
-                emit_error(payload,e, subgraph_id, graph_id)
-
-    payload["values"] = values
-
-    # print("Payload Values: ", payload["values"])
-
-    op_type = payload["op_type"]
-    operator = payload["operator"]
-    params=payload['params']
-    param_string=""
-    for i in params.keys():
-        if type(params[i]) == str:
-            param_string+=","+i+"=\'"+str(params[i])+"\'"
-        else:
-            param_string+=","+i+"="+str(params[i])
-
-
     try:
+
+        values = []
+        
+
+        for i in range(len(payload["values"])):
+            if "value" in payload["values"][i].keys():
+                # print("From server")
+                if "path" not in payload["values"][i].keys():
+                    values.append(payload["values"][i]["value"])
+                
+                else:
+                    server_file_path = payload["values"][i]["path"]
+
+                    download_path = os.path.join(FTP_DOWNLOAD_FILES_FOLDER,os.path.basename(payload["values"][i]["path"]))
+
+                    g.ftp_client.download(download_path, os.path.basename(server_file_path))
+                    value = load_data(download_path).tolist()
+                    print('Loaded Data Value: ',value)
+                    values.append(value)
+
+                    if os.path.basename(server_file_path) not in g.delete_files_list and payload["values"][i]["to_delete"] == 'True':
+                        g.delete_files_list.append(os.path.basename(server_file_path))
+
+                    if os.path.exists(download_path):
+                        os.remove(download_path)
+
+            elif "op_id" in payload["values"][i].keys():
+                values.append(g.outputs[payload['values'][i]['op_id']])
+
+        payload["values"] = values
+
+        op_type = payload["op_type"]
+        operator = payload["operator"]
+        params=payload['params']
+        param_string=""
+        for i in params.keys():
+            if type(params[i]) == str:
+                param_string+=","+i+"=\'"+str(params[i])+"\'"
+            else:
+                param_string+=","+i+"="+str(params[i])
+
         if op_type == "unary":
             value1 = payload["values"][0]
             short_name = get_key(operator,functions)
@@ -186,8 +173,6 @@ def compute_locally(payload, subgraph_id, graph_id):
             value2 = payload["values"][1]
             short_name = get_key(operator,functions)
             expression="{}({}, {}{})".format(numpy_functions[short_name], value1, value2,param_string)
-
-
 
             result = eval(expression)
         
@@ -218,11 +203,6 @@ def compute_locally(payload, subgraph_id, graph_id):
             file_path = upload_result(payload, result)
 
             g.outputs[payload["op_id"]] = result.tolist()
-
-            # op = g.ops[payload["op_id"]]
-            # op["status"] = "success"
-            # op["endTime"] = int(time.time() * 1000)
-            # g.ops[payload["op_id"]] = op
 
             return json.dumps({
                 'op_type': payload["op_type"],
@@ -258,8 +238,8 @@ def upload_result(payload, result):
 
 def emit_error(payload, error, subgraph_id, graph_id):
     print("Emit Error")
-    # print(payload)
     print(error)
+    g.error = True
     error=str(error)
     client = g.client
     print(error,payload)
@@ -273,22 +253,10 @@ def emit_error(payload, error, subgraph_id, graph_id):
             "graph_id": graph_id
     }), namespace="/client")
 
-    # op = g.ops[payload["op_id"]]
-    # op["status"] = "failure"
-    # op["endTime"] = int(time.time() * 1000)
-    # g.ops[payload["op_id"]] = op
-
     try:
         for ftp_file in g.delete_files_list:
             g.ftp_client.delete_file(ftp_file)
     except Exception as e:
-        client.emit("op_completed", json.dumps({
-            'op_type': payload["op_type"],
-            'error': error,
-            'operator': payload["operator"],
-            "op_id": payload["op_id"],
-            "status": "failure"
-            }), namespace="/client")
 
         g.delete_files_list = []
         g.outputs = {}
@@ -409,6 +377,22 @@ def reshape(tens,shape=None):
     else:
         return np.reshape(tens,newshape=shape)
 
+def shape(arr,index=None):
+    arr = np.array(arr)
+    if index is None:
+        return arr.shape
+    else:
+        return arr.shape[int(index)]
+
+def pad(arr,sequence=None,mode=None):
+    if sequence is None:
+        raise Exception("sequence param is missing")
+    elif mode is None:
+        raise Exception("mode is missing")
+    arr = np.array(arr)
+    result = np.pad(arr,sequence,mode=mode)
+    return result
+
 def mode(arr,axis=0):
     result=stats.mode(arr,axis=axis)
     return result.mode
@@ -422,6 +406,3 @@ def concatenate(*args,**kwargs):
             param_string+=","+i+"="+str(params[i])
     result=eval("np.concatenate(args"+param_string+")")
     return result
-     
-
-
