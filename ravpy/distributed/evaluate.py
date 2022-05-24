@@ -23,35 +23,22 @@ def compute_subgraph(d):
     data = d["payloads"]
     results = []
     compute_success = True
-    for index in data:
-        # g.ops[index["op_id"]] = {
-        #     "id": index["op_id"],
-        #     "status": "pending",
-        #     "startTime": int(time.time() * 1000),
-        #     "endTime": None,
-        #     "data": index
-        # }
+    g.error = False
 
-        # #Acknowledge op
-        # client.emit("acknowledge", json.dumps({
-        #         "op_id": index["op_id"],
-        #         "message": "Op received"
-        # }), namespace="/client")
+    for index in data:
 
         #Perform
         operation_type = index["op_type"]
         operator = index["operator"]
         if operation_type is not None and operator is not None:
             result_payload = compute_locally(index, subgraph_id, graph_id)
-            if result_payload is not None:
+
+            if not g.error:
                 results.append(result_payload)
             else:
-                compute_success = False
                 break
 
-        # stopTimer(timeoutId)
-        # timeoutId = setTimeout(waitInterval,opTimeout)  
-    if compute_success:
+    if not g.error:
         emit_result_data = {"subgraph_id": d["subgraph_id"],"graph_id":d["graph_id"],"results":results}
         client.emit("subgraph_completed", json.dumps(emit_result_data), namespace="/client")
         print('Emitted subgraph_completed')
@@ -67,7 +54,6 @@ def compute_subgraph(d):
 
     g.delete_files_list = []
     g.outputs = {}
-    # g.ops = {}
 
 # Check if the client is connected
 @g.client.on('check_status', namespace="/client")
@@ -78,20 +64,6 @@ def check_status(d):
 def waitInterval():
     global client, timeoutId, opTimeout, initialTimeout
     client = g.client
-
-    # for key in g.ops:
-    #     op = g.ops[key]
-
-    #     if op["status"] == "pending" or int(time.time() * 1000) - op["startTime"] < opTimeout:
-    #         stopTimer(timeoutId)
-    #         timeoutId = setTimeout(waitInterval,opTimeout)
-    #         return
-        
-    #     if op["status"] == "pending" and int(time.time() * 1000) - op["startTime"] > opTimeout:
-    #         op["status"] = "failure"
-    #         op["endTime"] = int(time.time() * 1000)
-    #         g.ops[key] = g.ops
-    #         emit_error(op["data"], {"message": "OpTimeout error"})
 
     if not g.has_subgraph:
         client.emit("get_op", json.dumps({
