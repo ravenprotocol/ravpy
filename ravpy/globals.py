@@ -33,6 +33,7 @@ class Globals(object):
         self._has_subgraph = False
         self._ftp_upload_blocksize = 8192
         self._ftp_download_blocksize = 8192
+        self._error = False
         
     @property
     def cid(self):
@@ -122,5 +123,13 @@ class Globals(object):
     @outputs.setter
     def outputs(self, outputs):
         self._outputs = outputs
+
+    @property
+    def error(self):
+        return self._error
+
+    @error.setter
+    def error(self, error):
+        self._error = error
 
 g = Globals.Instance()
