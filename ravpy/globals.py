@@ -1,22 +1,19 @@
 import socketio
-import time
-import ast
 
-from .config import SOCKET_SERVER_HOST, SOCKET_SERVER_PORT, TYPE
+from .config import RAVENVERSE_HOST, RAVENVERSE_PORT, TYPE
 from .singleton_utils import Singleton
 
 
-def get_client(cid, ravenverse_token):
-    auth_headers = {"Authorization" : ravenverse_token}
+def get_client(ravenverse_token):
+    auth_headers = {"token": ravenverse_token}
     client = socketio.Client(logger=False, request_timeout=60)
     try:
-        client.connect(url="http://{}:{}?cid={}&type={}".format(SOCKET_SERVER_HOST, SOCKET_SERVER_PORT, cid, TYPE), 
+        client.connect(url="http://{}:{}?type={}".format(RAVENVERSE_HOST, RAVENVERSE_PORT, TYPE),
                        auth=auth_headers,
                        namespaces=['/client'])
         return client
     except Exception as e:
-        print("Exception:{}".format(e))
-        print("Unable to connect to ravsock. Make sure you are using the right hostname and port")
+        print("Exception:{}, Unable to connect to ravsock. Make sure you are using the right hostname and port".format(e))
         exit()
 
 
@@ -24,7 +21,6 @@ def get_client(cid, ravenverse_token):
 class Globals(object):
     def __init__(self):
         self._client = None
-        self._cid = None
         self._timeoutId = None
         self._ops = {}
         self._opTimeout = 50
@@ -37,10 +33,6 @@ class Globals(object):
         self._ftp_download_blocksize = 8192
         self._error = False
         self._ravenverse_token = None
-        
-    @property
-    def cid(self):
-        return self._cid
 
     @property
     def timeoutId(self):
@@ -78,25 +70,17 @@ class Globals(object):
     def ftp_download_blocksize(self, ftp_download_blocksize):
         self._ftp_download_blocksize = ftp_download_blocksize
 
-    @cid.setter
-    def cid(self, cid):
-        self._cid = cid
-
     @ops.setter
     def ops(self, ops):
         self._ops = ops
 
     @property
     def client(self):
-        if self._cid is None:
-            print("Set cid first")
-            exit()
-
         if self._client is not None:
             return self._client
 
-        if self._client is None and self._cid is not None:
-            self._client = get_client(self._cid, self._ravenverse_token)
+        if self._client is None:
+            self._client = get_client(self._ravenverse_token)
             return self._client
 
     @property
@@ -142,5 +126,6 @@ class Globals(object):
     @ravenverse_token.setter
     def ravenverse_token(self, ravenverse_token):
         self._ravenverse_token = ravenverse_token
+
 
 g = Globals.Instance()

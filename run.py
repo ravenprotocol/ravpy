@@ -1,12 +1,13 @@
-import ast
 import sys
 from argparse import ArgumentParser
 
-import pandas as pd
+from dotenv import load_dotenv
 
-from ravpy.federated import compute
+load_dotenv()
+
+from ravpy import participate_federated
 from ravpy.globals import g
-from ravpy.utils import get_graphs, print_graphs, get_graph, get_subgraph_ops, apply_rules
+from ravpy.utils import get_graphs, print_graphs, get_graph
 
 if __name__ == '__main__':
     print("Executed")
@@ -59,48 +60,9 @@ if __name__ == '__main__':
             g.client.disconnect()
             raise Exception("Invalid graph id")
 
-        subgraph_ops = get_subgraph_ops(graph["id"], cid=args.cid)
-        graph_rules = ast.literal_eval(graph['rules'])
-
-        if args.data is None and args.file_path is None:
+        # Check file path
+        if args.file_path is None:
             g.client.disconnect()
             raise Exception("Provide values or file path to use")
 
-        if args.data is not None:
-            pass
-            # data_columns = args.data
-            # data_columns = ast.literal_eval(args.data)
-            # data_silo = apply_rules(data_columns, rules=graph_rules)
-            # print(data_silo)
-            # if data_silo is not None:
-            #     compute(data_silo, graph, subgraph_ops, final_column_names)
-            # else:
-            #     print("You can't participate as your data is it in the wrong format")
-
-        elif args.file_path is not None:
-            print("File path:", args.file_path)
-            dataframe = pd.read_csv(args.file_path)
-            column_names = []
-            for col in dataframe.columns:
-                column_names.append(col)
-            # column_names.sort()
-
-            final_column_names = []
-            for key, value in graph_rules['rules'].items():
-                if key in column_names:
-                    final_column_names.append(key)
-                else:
-                    raise Exception('Incorrect Rules Format.')
-            final_column_names.sort()
-
-            data_columns = []
-            for column_name in final_column_names:
-                column = dataframe[column_name].tolist()
-                data_columns.append(column)
-
-            data_silo = apply_rules(data_columns, rules=graph_rules, final_column_names=final_column_names)
-            if data_silo is not None:
-                compute(args.cid, data_silo, graph, subgraph_ops, final_column_names)
-
-            else:
-                print("You can't participate as your data is it in the wrong format")
+        participate_federated(args.cid, graph_id=args.graph_id, file_path=args.file_path)

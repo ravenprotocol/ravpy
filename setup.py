@@ -12,7 +12,8 @@ setup(
         "python-socketio==5.4.1",
         "requests==2.27.1",
         "tenseal==0.3.6",
-        "pyqt5==5.15.6",
-        "pyqt5-tools==5.15.4.3.2"
+        "python-dotenv",
+        "scipy"
     ],
+    dependency_lins=["git+https://github.com/ravenprotocol/ravop.git"]
 )

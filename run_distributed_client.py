@@ -1,9 +1,13 @@
-from ravpy.initialize import initialize
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from ravpy.distributed.participate import participate
+from ravpy.initialize import initialize
+
 
 if __name__ == '__main__':
-    ravenverse_token = '<ravenverse_token>'
-    username = '1'
+    ravenverse_token = '<auth_token>'
 
-    initialize(ravenverse_token, username)
+    initialize(ravenverse_token)
     participate()

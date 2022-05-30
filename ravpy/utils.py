@@ -1,23 +1,24 @@
 import os
+import pickle as pkl
 import shutil
 
 import numpy as np
 import requests
 
 from .config import ENCRYPTION
-import pickle as pkl
 
 if ENCRYPTION:
     import tenseal as ts
 
-from .config import BASE_DIR, CONTEXT_FOLDER, SOCKET_SERVER_URL, FTP_TEMP_FILES_FOLDER
+from .config import BASE_DIR, CONTEXT_FOLDER, RAVENVERSE_URL, FTP_TEMP_FILES_FOLDER
 
-from threading import Timer  
+from threading import Timer
 
 from .globals import g
 
+
 def download_file(url, file_name):
-    headers = {"Authorization" : g.ravenverse_token}
+    headers = {"token": g.ravenverse_token}
     with requests.get(url, stream=True, headers=headers) as r:
         with open(file_name, 'wb') as f:
             shutil.copyfileobj(r.raw, f)
@@ -57,16 +58,17 @@ def load_context(file_path):
 
 
 def fetch_and_load_context(client, context_filename):
-    from .utils import load_context
     client.download(os.path.join(CONTEXT_FOLDER, context_filename), context_filename)
     ckks_context = load_context(os.path.join(CONTEXT_FOLDER, context_filename))
     return ckks_context
 
 
-def get_ftp_credentials(cid):
+def get_ftp_credentials():
     # Get
-    headers = {"Authorization" : g.ravenverse_token}
-    r = requests.get(url="{}/client/ftp_credentials/?cid={}".format(SOCKET_SERVER_URL, cid),headers=headers)
+    print("Fetching credentials")
+    headers = {"token": g.ravenverse_token}
+    r = requests.get(url="{}/client/ftp_credentials/".format(RAVENVERSE_URL), headers=headers)
+    print(r.text)
     if r.status_code == 200:
         return r.json()
     return None
@@ -74,7 +76,7 @@ def get_ftp_credentials(cid):
 
 def get_graph(graph_id):
     # Get graph
-    r = requests.get(url="{}/graph/get/?id={}".format(SOCKET_SERVER_URL, graph_id))
+    r = requests.get(url="{}/graph/get/?id={}".format(RAVENVERSE_URL, graph_id))
     if r.status_code == 200:
         return r.json()
     return None
@@ -82,7 +84,8 @@ def get_graph(graph_id):
 
 def get_graphs():
     # Get graphs
-    r = requests.get(url="{}/graph/get/all/?approach=federated".format(SOCKET_SERVER_URL))
+    r = requests.get(url="{}/graph/get/all/?approach=federated".format(RAVENVERSE_URL))
+    print(r.text)
     if r.status_code != 200:
         return None
 
@@ -101,7 +104,7 @@ def print_graphs(graphs):
 
 def get_subgraph_ops(graph_id, cid):
     # Get subgraph ops
-    r = requests.get(url="{}/subgraph/ops/get/?graph_id={}&cid={}".format(SOCKET_SERVER_URL, graph_id, cid))
+    r = requests.get(url="{}/subgraph/ops/get/?graph_id={}&cid={}".format(RAVENVERSE_URL, graph_id, cid))
     if r.status_code == 200:
         return r.json()['subgraph_ops']
     return None
@@ -132,16 +135,19 @@ def apply_rules(data_columns, rules, final_column_names):
 
         data_silo.append(data_column_values)
     return data_silo
- 
-def setTimeout(fn, ms, *args, **kwargs): 
-    timeoutId = Timer(ms / 1000., fn, args=args, kwargs=kwargs) 
-    timeoutId.start() 
+
+
+def setTimeout(fn, ms, *args, **kwargs):
+    timeoutId = Timer(ms / 1000., fn, args=args, kwargs=kwargs)
+    timeoutId.start()
     return timeoutId
+
 
 def stopTimer(timeoutId):
     # print("Timer stopped")
     if timeoutId is not None:
         timeoutId.cancel()
+
 
 def dump_data(op_id, value):
     """
@@ -155,10 +161,11 @@ def dump_data(op_id, value):
         pkl.dump(value, f)
     return file_path
 
+
 def load_data(path):
     """
     Load ndarray from file
     """
     with open(path, 'rb') as f:
-        data = pkl.load(f)         
+        data = pkl.load(f)
     return np.array(data)
