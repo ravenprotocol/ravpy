@@ -3,13 +3,15 @@ import time
 import ast
 
 from .config import SOCKET_SERVER_HOST, SOCKET_SERVER_PORT, TYPE
-from .utils import Singleton
+from .singleton_utils import Singleton
 
 
-def get_client(cid):
+def get_client(cid, ravenverse_token):
+    auth_headers = {"Authorization" : ravenverse_token}
     client = socketio.Client(logger=False, request_timeout=60)
     try:
-        client.connect(url="http://{}:{}?cid={}&type={}".format(SOCKET_SERVER_HOST, SOCKET_SERVER_PORT, cid, TYPE),
+        client.connect(url="http://{}:{}?cid={}&type={}".format(SOCKET_SERVER_HOST, SOCKET_SERVER_PORT, cid, TYPE), 
+                       auth=auth_headers,
                        namespaces=['/client'])
         return client
     except Exception as e:
@@ -34,6 +36,7 @@ class Globals(object):
         self._ftp_upload_blocksize = 8192
         self._ftp_download_blocksize = 8192
         self._error = False
+        self._ravenverse_token = None
         
     @property
     def cid(self):
@@ -93,7 +96,7 @@ class Globals(object):
             return self._client
 
         if self._client is None and self._cid is not None:
-            self._client = get_client(self._cid)
+            self._client = get_client(self._cid, self._ravenverse_token)
             return self._client
 
     @property
@@ -131,5 +134,13 @@ class Globals(object):
     @error.setter
     def error(self, error):
         self._error = error
+
+    @property
+    def ravenverse_token(self):
+        return self._ravenverse_token
+
+    @ravenverse_token.setter
+    def ravenverse_token(self, ravenverse_token):
+        self._ravenverse_token = ravenverse_token
 
 g = Globals.Instance()
