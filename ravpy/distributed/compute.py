@@ -3,6 +3,7 @@ from distutils.log import error
 import os
 import numpy as np
 import json
+import sys
 import time
 #import tensorflow
 from scipy import stats
@@ -53,9 +54,8 @@ numpy_functions = {
             'slice': 'slice',
 
             'find_indices': 'find_indices',
-            'shape':'shape',#np.shape
+            'shape':'np.shape',
             'squeeze':'np.squeeze',
-            'pad':'pad',
 
             #Comparision ops
             'greater': 'np.greater',
@@ -122,6 +122,8 @@ def compute_locally_bm(*args, **kwargs):
 def compute_locally(payload, subgraph_id, graph_id):
 
     try:
+        # print("Computing ",payload["operator"])
+        # print('\n\nPAYLOAD: ',payload)
 
         values = []
         
@@ -137,10 +139,15 @@ def compute_locally(payload, subgraph_id, graph_id):
 
                     download_path = os.path.join(FTP_DOWNLOAD_FILES_FOLDER,os.path.basename(payload["values"][i]["path"]))
 
+                    # try:
                     g.ftp_client.download(download_path, os.path.basename(server_file_path))
                     value = load_data(download_path).tolist()
                     print('Loaded Data Value: ',value)
                     values.append(value)
+
+                    # except Exception as error:
+                    #     print('Error: ', error)
+                    #     emit_error(payload, error, subgraph_id, graph_id)
 
                     if os.path.basename(server_file_path) not in g.delete_files_list and payload["values"][i]["to_delete"] == 'True':
                         g.delete_files_list.append(os.path.basename(server_file_path))
@@ -149,9 +156,15 @@ def compute_locally(payload, subgraph_id, graph_id):
                         os.remove(download_path)
 
             elif "op_id" in payload["values"][i].keys():
+                # print("From client")
+                # try:
                 values.append(g.outputs[payload['values'][i]['op_id']])
+                # except Exception as e:
+                #     emit_error(payload,e, subgraph_id, graph_id)
 
         payload["values"] = values
+
+        # print("Payload Values: ", payload["values"])
 
         op_type = payload["op_type"]
         operator = payload["operator"]
@@ -163,6 +176,8 @@ def compute_locally(payload, subgraph_id, graph_id):
             else:
                 param_string+=","+i+"="+str(params[i])
 
+
+        # try:
         if op_type == "unary":
             value1 = payload["values"][0]
             short_name = get_key(operator,functions)
@@ -173,6 +188,8 @@ def compute_locally(payload, subgraph_id, graph_id):
             value2 = payload["values"][1]
             short_name = get_key(operator,functions)
             expression="{}({}, {}{})".format(numpy_functions[short_name], value1, value2,param_string)
+
+
 
             result = eval(expression)
         
@@ -204,6 +221,11 @@ def compute_locally(payload, subgraph_id, graph_id):
 
             g.outputs[payload["op_id"]] = result.tolist()
 
+            # op = g.ops[payload["op_id"]]
+            # op["status"] = "success"
+            # op["endTime"] = int(time.time() * 1000)
+            # g.ops[payload["op_id"]] = op
+
             return json.dumps({
                 'op_type': payload["op_type"],
                 'file_name': os.path.basename(file_path),
@@ -215,6 +237,10 @@ def compute_locally(payload, subgraph_id, graph_id):
 
     except Exception as error:
         print('Error: ', error)
+        if 'broken pipe' in str(error).lower():
+            print('\n\nYou have encountered an IO based Broken Pipe Error. \nRestart terminal and try connecting again')
+            sys.exit()
+
         emit_error(payload, error, subgraph_id, graph_id)
 
 
@@ -238,6 +264,7 @@ def upload_result(payload, result):
 
 def emit_error(payload, error, subgraph_id, graph_id):
     print("Emit Error")
+    # print(payload)
     print(error)
     g.error = True
     error=str(error)
@@ -252,6 +279,11 @@ def emit_error(payload, error, subgraph_id, graph_id):
             "subgraph_id": subgraph_id,
             "graph_id": graph_id
     }), namespace="/client")
+
+    # op = g.ops[payload["op_id"]]
+    # op["status"] = "failure"
+    # op["endTime"] = int(time.time() * 1000)
+    # g.ops[payload["op_id"]] = op
 
     try:
         for ftp_file in g.delete_files_list:
@@ -376,22 +408,6 @@ def reshape(tens,shape=None):
         return None
     else:
         return np.reshape(tens,newshape=shape)
-
-def shape(arr,index=None):
-    arr = np.array(arr)
-    if index is None:
-        return arr.shape
-    else:
-        return arr.shape[int(index)]
-
-def pad(arr,sequence=None,mode=None):
-    if sequence is None:
-        raise Exception("sequence param is missing")
-    elif mode is None:
-        raise Exception("mode is missing")
-    arr = np.array(arr)
-    result = np.pad(arr,sequence,mode=mode)
-    return result
 
 def mode(arr,axis=0):
     result=stats.mode(arr,axis=axis)

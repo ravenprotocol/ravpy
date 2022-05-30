@@ -14,26 +14,11 @@ from .config import BASE_DIR, CONTEXT_FOLDER, SOCKET_SERVER_URL, FTP_TEMP_FILES_
 
 from threading import Timer  
 
-class Singleton:
-    def __init__(self, cls):
-        self._cls = cls
-
-    def Instance(self):
-        try:
-            return self._instance
-        except AttributeError:
-            self._instance = self._cls()
-            return self._instance
-
-    def __call__(self):
-        raise TypeError("Singletons must be accessed through `Instance()`.")
-
-    def __instancecheck__(self, inst):
-        return isinstance(inst, self._cls)
-
+from .globals import g
 
 def download_file(url, file_name):
-    with requests.get(url, stream=True) as r:
+    headers = {"Authorization" : g.ravenverse_token}
+    with requests.get(url, stream=True, headers=headers) as r:
         with open(file_name, 'wb') as f:
             shutil.copyfileobj(r.raw, f)
     print("file downloaded")
@@ -80,7 +65,8 @@ def fetch_and_load_context(client, context_filename):
 
 def get_ftp_credentials(cid):
     # Get
-    r = requests.get(url="{}/client/ftp_credentials/?cid={}".format(SOCKET_SERVER_URL, cid))
+    headers = {"Authorization" : g.ravenverse_token}
+    r = requests.get(url="{}/client/ftp_credentials/?cid={}".format(SOCKET_SERVER_URL, cid),headers=headers)
     if r.status_code == 200:
         return r.json()
     return None
