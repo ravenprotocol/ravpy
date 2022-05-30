@@ -38,6 +38,8 @@ def compute_subgraph(d):
             else:
                 break
 
+        # stopTimer(timeoutId)
+        # timeoutId = setTimeout(waitInterval,opTimeout)  
     if not g.error:
         emit_result_data = {"subgraph_id": d["subgraph_id"],"graph_id":d["graph_id"],"results":results}
         client.emit("subgraph_completed", json.dumps(emit_result_data), namespace="/client")
@@ -54,6 +56,7 @@ def compute_subgraph(d):
 
     g.delete_files_list = []
     g.outputs = {}
+    # g.ops = {}
 
 # Check if the client is connected
 @g.client.on('check_status', namespace="/client")
