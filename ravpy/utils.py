@@ -102,9 +102,9 @@ def print_graphs(graphs):
               "Rules:{}".format(graph['id'], graph['name'], graph['approach'], graph['rules']))
 
 
-def get_subgraph_ops(graph_id, cid):
+def get_subgraph_ops(graph_id):
     # Get subgraph ops
-    r = requests.get(url="{}/subgraph/ops/get/?graph_id={}&cid={}".format(RAVENVERSE_URL, graph_id, cid))
+    r = requests.get(url="{}/subgraph/ops/get/?graph_id={}".format(RAVENVERSE_URL, graph_id))
     if r.status_code == 200:
         return r.json()['subgraph_ops']
     return None
