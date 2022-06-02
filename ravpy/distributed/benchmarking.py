@@ -3,7 +3,7 @@ import json
 import time
 
 import speedtest
-from ravop import functions
+from ..strings import functions
 
 from .compute import compute_locally_bm
 from .evaluate import waitInterval
