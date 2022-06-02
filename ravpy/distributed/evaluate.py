@@ -40,7 +40,7 @@ def compute_subgraph(d):
         # stopTimer(timeoutId)
         # timeoutId = setTimeout(waitInterval,opTimeout)  
     if not g.error:
-        emit_result_data = {"subgraph_id": d["subgraph_id"],"graph_id":d["graph_id"],"results":results}
+        emit_result_data = {"subgraph_id": d["subgraph_id"],"graph_id":d["graph_id"],"token": g.ravenverse_token, "results":results}
         client.emit("subgraph_completed", json.dumps(emit_result_data), namespace="/client")
         print('Emitted subgraph_completed')
 
