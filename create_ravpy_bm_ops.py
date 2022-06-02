@@ -1,5 +1,5 @@
 import numpy as np
-import ravop.core as R
+import ravop.ravop as R
 import json
 
 
