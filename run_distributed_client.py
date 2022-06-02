@@ -8,6 +8,5 @@ from ravpy.initialize import initialize
 
 if __name__ == '__main__':
     ravenverse_token = '<auth_token>'
-
     initialize(ravenverse_token)
     participate()
