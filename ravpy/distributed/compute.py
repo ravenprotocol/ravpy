@@ -210,7 +210,7 @@ def compute_locally(payload, subgraph_id, graph_id):
             'op_type': payload["op_type"],
             'result': result,
             # 'username': g.cid,
-            'token': g.ravenverse_token,
+            # 'token': g.ravenverse_token,
             'operator': payload["operator"],
             "op_id": payload["op_id"],
             "status": "success"
@@ -231,7 +231,7 @@ def compute_locally(payload, subgraph_id, graph_id):
                 'op_type': payload["op_type"],
                 'file_name': os.path.basename(file_path),
                 # 'username': g.cid,
-                'token': g.ravenverse_token,
+                # 'token': g.ravenverse_token,
                 'operator': payload["operator"],
                 "op_id": payload["op_id"],
                 "status": "success"
