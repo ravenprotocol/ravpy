@@ -1,7 +1,6 @@
 import time
 import json
 import os
-from ravop import functions
 from .compute import compute_locally, emit_error
 
 from ..utils import setTimeout, stopTimer

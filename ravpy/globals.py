@@ -1,5 +1,5 @@
 import socketio
-
+import os
 from .config import RAVENVERSE_HOST, RAVENVERSE_PORT, TYPE
 from .singleton_utils import Singleton
 
@@ -7,10 +7,17 @@ from .singleton_utils import Singleton
 def get_client(ravenverse_token):
     auth_headers = {"token": ravenverse_token}
     client = socketio.Client(logger=False, request_timeout=60)
+
+    @client.on('error',namespace='/client')
+    def check_error(d):
+        print("\n======= Error: {} =======".format(d))
+        client.disconnect()
+        os._exit(1)
+
     try:
         client.connect(url="http://{}:{}?type={}".format(RAVENVERSE_HOST, RAVENVERSE_PORT, TYPE),
                        auth=auth_headers,
-                       namespaces=['/client'])
+                       namespaces=['/client'], wait_timeout=10)
         return client
     except Exception as e:
         print("Exception:{}, Unable to connect to ravsock. Make sure you are using the right hostname and port".format(e))

@@ -14,7 +14,7 @@ from ..utils import get_key, dump_data, get_ftp_credentials, load_data
 from ..ftp import get_client as get_ftp_client
 from ..ftp import check_credentials as check_credentials
 from ..config import FTP_DOWNLOAD_FILES_FOLDER
-from ravop import functions
+from ..strings import functions
 import ast
 
 
@@ -209,7 +209,8 @@ def compute_locally(payload, subgraph_id, graph_id):
             return json.dumps({
             'op_type': payload["op_type"],
             'result': result,
-            'username': g.cid,
+            # 'username': g.cid,
+            'token': g.ravenverse_token,
             'operator': payload["operator"],
             "op_id": payload["op_id"],
             "status": "success"
@@ -229,7 +230,8 @@ def compute_locally(payload, subgraph_id, graph_id):
             return json.dumps({
                 'op_type': payload["op_type"],
                 'file_name': os.path.basename(file_path),
-                'username': g.cid,
+                # 'username': g.cid,
+                'token': g.ravenverse_token,
                 'operator': payload["operator"],
                 "op_id": payload["op_id"],
                 "status": "success"
