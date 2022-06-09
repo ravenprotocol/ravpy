@@ -1,5 +1,5 @@
 import os
-from ..globals import g
+
 
 def participate():
     # Connect

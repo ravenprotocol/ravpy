@@ -32,7 +32,7 @@ The contributor must connect to the Ravenverse using a unique token that they ca
 ```python
 from ravpy.initialize import initialize
 
-initialize(ravenverse_token = '<token>', username = 'jerry')
+initialize(ravenverse_token = '<token>')
 ```
 
 ### Participate in Distributed Computing

@@ -120,20 +120,19 @@ def compute_locally_bm(*args, **kwargs):
 
 # async 
 def compute_locally(payload, subgraph_id, graph_id):
-
     try:
         # print("Computing ",payload["operator"])
         # print('\n\nPAYLOAD: ',payload)
 
         values = []
-        
+
 
         for i in range(len(payload["values"])):
             if "value" in payload["values"][i].keys():
                 # print("From server")
                 if "path" not in payload["values"][i].keys():
                     values.append(payload["values"][i]["value"])
-                
+
                 else:
                     server_file_path = payload["values"][i]["path"]
 
@@ -192,7 +191,7 @@ def compute_locally(payload, subgraph_id, graph_id):
 
 
             result = eval(expression)
-        
+
         if not isinstance(result, np.ndarray):
             result = np.array(result)
 
@@ -203,7 +202,7 @@ def compute_locally(payload, subgraph_id, graph_id):
                 result = result.tolist()
             except:
                 result = result
-        
+
             g.outputs[payload["op_id"]] = result
 
             return json.dumps({
@@ -216,7 +215,7 @@ def compute_locally(payload, subgraph_id, graph_id):
             "status": "success"
             })
 
-        else:        
+        else:
 
             file_path = upload_result(payload, result)
 

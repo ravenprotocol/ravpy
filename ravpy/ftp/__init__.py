@@ -1,6 +1,5 @@
 from ftplib import FTP
 
-from ..config import FTP_SERVER_URL
 from ..config import RAVENVERSE_FTP_HOST
 from ..globals import g
 
@@ -33,7 +32,7 @@ class FTPClient:
 
 
 def get_client(username, password):
-    print("FTP User credentials:", FTP_SERVER_URL, username, password)
+    print("FTP User credentials:", RAVENVERSE_FTP_HOST, username, password)
     return FTPClient(host=RAVENVERSE_FTP_HOST, user=username, passwd=password)
 
 

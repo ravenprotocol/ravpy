@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 
 BASE_DIR = os.path.join(str(Path.home()), "ravenverse/ravpy")
-FTP_SERVER_URL = "0.0.0.0"  # Change to IP Address of GCP Instance
 
 CONTEXT_FOLDER = os.path.join(BASE_DIR, "contexts")
 PARAMS_DIR = os.path.join(BASE_DIR, "params")

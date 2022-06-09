@@ -1,9 +1,21 @@
+from pathlib import Path
+
 from setuptools import setup, find_packages
+
+this_directory = Path(__file__).parent
+long_description = (this_directory / "README.md").read_text()
 
 setup(
     name="ravpy",
-    version="0.3",
+    version="0.4.1",
+    license='MIT',
+    author="Raven Protocol",
+    author_email='kailash@ravenprotocol.com',
     packages=find_packages(),
+    long_description=long_description,
+    long_description_content_type='text/markdown',
+    url='https://github.com/ravenprotocol/ravpy',
+    keywords='Ravpy, python client library for providers',
     install_requires=[
         "numpy==1.21.5",
         "pandas==1.3.5",
@@ -13,7 +25,7 @@ setup(
         "requests==2.27.1",
         "tenseal==0.3.6",
         "python-dotenv",
-        "scipy"
-    ],
-    dependency_lins=["git+https://github.com/ravenprotocol/ravop.git"]
+        "scipy",
+        "speedtest-cli"
+    ]
 )
