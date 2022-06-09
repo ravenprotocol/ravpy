@@ -7,7 +7,7 @@ long_description = (this_directory / "README.md").read_text()
 
 setup(
     name="ravpy",
-    version="0.4.1",
+    version="0.4.2",
     license='MIT',
     author="Raven Protocol",
     author_email='kailash@ravenprotocol.com',
@@ -23,7 +23,6 @@ setup(
         "python-engineio==4.2.1",
         "python-socketio==5.4.1",
         "requests==2.27.1",
-        "tenseal==0.3.6",
         "python-dotenv",
         "scipy",
         "speedtest-cli"
