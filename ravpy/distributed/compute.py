@@ -51,11 +51,13 @@ numpy_functions = {
             'gather': 'gather', 
             'stack': 'np.stack', 
             'tile': 'np.tile', 
-            'slice': 'slice',
+            'slice': 'ravslice',
 
             'find_indices': 'find_indices',
-            'shape':'np.shape',
+            'shape':'shape',#np.shape
             'squeeze':'np.squeeze',
+            'pad':'pad',
+            'index':'index',
 
             #Comparision ops
             'greater': 'np.greater',
@@ -89,7 +91,15 @@ numpy_functions = {
             'ravel': 'np.ravel',
 
             'concat': 'concatenate',
-            'cube': 'np.cbrt'
+            'cube': 'np.cbrt',
+            'arange':'np.arange',
+            'repeat':'repeat',
+            'join_to_list': 'join_to_list',
+            'zeros':'np.zeros',
+            'ravint':'ravint',
+            'cnn_index':'cnn_index',
+            'cnn_add_at':'cnn_add_at',
+            'cnn_index_2':'cnn_index_2'
     }
 
 
@@ -141,7 +151,7 @@ def compute_locally(payload, subgraph_id, graph_id):
                     # try:
                     g.ftp_client.download(download_path, os.path.basename(server_file_path))
                     value = load_data(download_path).tolist()
-                    print('Loaded Data Value: ',value)
+                    # print('Loaded Data Value: ',value)
                     values.append(value)
 
                     # except Exception as error:
@@ -172,6 +182,13 @@ def compute_locally(payload, subgraph_id, graph_id):
         for i in params.keys():
             if type(params[i]) == str:
                 param_string+=","+i+"=\'"+str(params[i])+"\'"
+            elif type(params[i]) == dict:
+                op_id = params[i]["op_id"]
+                param_value = g.outputs[op_id]
+                if type(param_value) == str:
+                    param_string+=","+i+"=\'"+str(param_value)+"\'"
+                else:
+                    param_string+=","+i+"="+str(param_value)
             else:
                 param_string+=","+i+"="+str(params[i])
 
@@ -266,7 +283,7 @@ def upload_result(payload, result):
 def emit_error(payload, error, subgraph_id, graph_id):
     print("Emit Error")
     # print(payload)
-    print(error)
+    # print(error)
     g.error = True
     error=str(error)
     client = g.client
@@ -301,7 +318,7 @@ def emit_error(payload, error, subgraph_id, graph_id):
 
 
 #ops:
-def slice(tensor,begin=None,size=None):
+def ravslice(tensor,begin=None,size=None):
     result=tensor[begin:begin+size]
     return result
 
@@ -423,3 +440,71 @@ def concatenate(*args,**kwargs):
             param_string+=","+i+"="+str(params[i])
     result=eval("np.concatenate(args"+param_string+")")
     return result
+
+def shape(arr,index=None):
+    arr = np.array(arr)
+    if index is None:
+        return arr.shape
+    else:
+        return arr.shape[int(index)]
+
+def pad(arr,sequence=None,mode=None):
+    if sequence is None:
+        raise Exception("sequence param is missing")
+    elif mode is None:
+        raise Exception("mode is missing")
+    arr = np.array(arr)
+    result = np.pad(arr,sequence,mode=mode)
+    return result
+
+def repeat(arr,repeats=None, axis=None):
+    if repeats is None:
+        raise Exception("repeats param is missing")
+
+    arr = np.array(arr)
+    result = np.repeat(arr,repeats=repeats,axis=axis)
+    return result
+
+def index(arr,indices=None):
+    if indices is None:
+        raise Exception("indices param is missing")
+    
+    # arr = np.array(arr)
+    result = eval("np.array(arr)"+indices)
+    return result
+
+def join_to_list(a,b):
+    a = np.array(a)
+    result = np.append(a,b)
+    return result
+
+def ravint(a):
+    return int(a)
+
+def cnn_index(arr,index1=None,index2=None,index3=None):
+    if index1 is None or index2 is None or index3 is None:
+        raise Exception("index1, index2 or index3 param is missing")
+    
+    result = eval("np.array(arr)"+"[:,{},{},{}]".format(index1,index2,index3))
+    return result
+
+def cnn_index_2(a, pad_h=None, height=None, pad_w=None, width=None):
+    if pad_h is None or height is None or pad_w is None or width is None:
+        raise Exception("index1, index2 or index3 param is missing")
+
+    a = np.array(a)
+    result = a[:, :, pad_h:height+pad_h, pad_w:width+pad_w]
+    return result
+
+def cnn_add_at(a, b, index1=None,index2=None,index3=None):
+    if index1 is None or index2 is None or index3 is None:
+        raise Exception("index1, index2 or index3 param is missing")
+    
+    a = np.array(a)
+    b = np.array(b)
+    index1 = np.array(index1)
+    index2 = np.array(index2)
+    index3 = np.array(index3)
+
+    np.add.at(a, (slice(None), index1, index2, index3), b)
+    return a
