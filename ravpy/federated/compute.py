@@ -13,9 +13,9 @@ from ..utils import get_ftp_credentials, fetch_and_load_context
 logger = logging.getLogger(__name__)
 
 
-def compute(cid, data_silo, graph, subgraph_ops, final_column_names):
+def compute(data_silo, graph, subgraph_ops, final_column_names):
     print("Get ftp credentials")
-    credentials = get_ftp_credentials(cid)
+    credentials = get_ftp_credentials()#cid)
     if credentials is None:
         raise Exception("Error")
     print("FTP credentials: {}".format(credentials['ftp_credentials']))
@@ -89,8 +89,6 @@ def compute(cid, data_silo, graph, subgraph_ops, final_column_names):
     result["encryption"] = ENCRYPTION
     result["params"] = final_params
     result["column_names"] = final_column_names
-
-    # print(result)
 
     params_filename = "params_{}.pkl".format(graph['id'])
     params_file = os.path.join(PARAMS_DIR, params_filename)
