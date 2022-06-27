@@ -25,6 +25,7 @@ setup(
         "requests==2.27.1",
         "python-dotenv",
         "scipy",
-        "speedtest-cli"
+        "speedtest-cli",
+        "terminaltables==3.1.10"
     ]
 )

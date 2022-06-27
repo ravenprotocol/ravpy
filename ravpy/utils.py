@@ -5,6 +5,8 @@ import shutil
 import numpy as np
 import requests
 
+from terminaltables import AsciiTable
+
 from .config import ENCRYPTION
 
 if ENCRYPTION:
@@ -76,20 +78,37 @@ def get_ftp_credentials():
 
 def get_graph(graph_id):
     # Get graph
-    r = requests.get(url="{}/graph/get/?id={}".format(RAVENVERSE_URL, graph_id))
+    headers = {"token": g.ravenverse_token}
+    r = requests.get(url="{}/graph/get/?id={}".format(RAVENVERSE_URL, graph_id), headers=headers)
+    if r.status_code == 200:
+        return r.json()
+    return None
+
+def get_federated_graph(graph_id):
+    # Get graph
+    headers = {"token": g.ravenverse_token}
+    r = requests.get(url="{}/graph/get_federated/?id={}".format(RAVENVERSE_URL, graph_id), headers=headers)
     if r.status_code == 200:
         return r.json()
     return None
 
 
-def get_graphs():
+def list_graphs(approach=None):
     # Get graphs
-    r = requests.get(url="{}/graph/get/all/?approach=federated".format(RAVENVERSE_URL))
-    print(r.text)
+    headers = {"token": g.ravenverse_token}
+    r = requests.get(url="{}/graph/get/all/?approach={}".format(RAVENVERSE_URL,approach), headers=headers)
     if r.status_code != 200:
         return None
 
     graphs = r.json()
+    print (AsciiTable([["{} Graphs".format(approach)]]).table)
+    table_data = [["Id", "Name", "Approach", "Algorithm", "Rules"]]
+
+    for graph in graphs:
+        table_data.append([graph['id'], graph['name'], graph['approach'], graph['algorithm'], graph['rules']])
+
+    print (AsciiTable(table_data).table)
+
     return graphs
 
 
@@ -104,7 +123,8 @@ def print_graphs(graphs):
 
 def get_subgraph_ops(graph_id):
     # Get subgraph ops
-    r = requests.get(url="{}/subgraph/ops/get/?graph_id={}".format(RAVENVERSE_URL, graph_id))
+    headers = {"token": g.ravenverse_token}
+    r = requests.get(url="{}/subgraph/ops/get/?graph_id={}".format(RAVENVERSE_URL, graph_id), headers=headers)
     if r.status_code == 200:
         return r.json()['subgraph_ops']
     return None
