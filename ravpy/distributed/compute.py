@@ -29,8 +29,8 @@ numpy_functions = {
             "pow":"np.power",
             "square_root":"np.sqrt",
             "cube_root":"np.cbrt",
-            "abs":"np.abs",
-            "sum":"sum",
+            "abs":"np.abs", 
+            "sum":"sum", 
             "sort":"np.sort",
             "reverse":"np.flip",
             "min":"np.min",
@@ -54,7 +54,7 @@ numpy_functions = {
             'slice': 'ravslice',
 
             'find_indices': 'find_indices',
-            'shape':'shape',#np.shape
+            'shape':'shape',
             'squeeze':'np.squeeze',
             'pad':'pad',
             'index':'index',
@@ -95,11 +95,13 @@ numpy_functions = {
             'arange':'np.arange',
             'repeat':'repeat',
             'join_to_list': 'join_to_list',
+            'combine_to_list': 'combine_to_list',
             'zeros':'np.zeros',
             'ravint':'ravint',
             'cnn_index':'cnn_index',
             'cnn_add_at':'cnn_add_at',
-            'cnn_index_2':'cnn_index_2'
+            'cnn_index_2':'cnn_index_2',
+            'size': 'size'
     }
 
 
@@ -468,14 +470,20 @@ def repeat(arr,repeats=None, axis=None):
 def index(arr,indices=None):
     if indices is None:
         raise Exception("indices param is missing")
-    
-    # arr = np.array(arr)
-    result = eval("np.array(arr)"+indices)
+    if isinstance(indices, str):
+        # arr = np.array(arr)
+        result = eval("np.array(arr)"+indices)
+    else:
+        result = eval("np.array(arr)[{}]".format(tuple(indices)))
     return result
 
 def join_to_list(a,b):
     a = np.array(a)
     result = np.append(a,b)
+    return result
+
+def combine_to_list(a,b):    
+    result = np.array([a,b])
     return result
 
 def ravint(a):
@@ -508,3 +516,18 @@ def cnn_add_at(a, b, index1=None,index2=None,index3=None):
 
     np.add.at(a, (slice(None), index1, index2, index3), b)
     return a
+
+def set_value(a,b,indices):
+    if indices is None:
+        raise Exception("indices param is missing")
+    if isinstance(indices, str):
+        exec("a"+indices+'='+'b')
+    else:
+        print("\n\n Indices in set value: ", indices)
+        a = np.array(a)
+        a[tuple(indices)] = b
+    return a
+
+def size(a):
+    a = np.array(a)
+    return a.size
