@@ -91,12 +91,14 @@ class Operators(object):
     FLATTEN = "flatten"
     RAVEL = "ravel"
     JOIN_TO_LIST = "join_to_list"
+    COMBINE_TO_LIST = "combine_to_list"
     ZEROS = "zeros"
     RAVINT = "ravint"
     CNN_INDEX = "cnn_index"
     CNN_INDEX_2 = "cnn_index_2"
     CNN_ADD_AT = "cnn_add_at"
-    
+    SIZE = "size"
+
     # Data Preprocessing
     ONE_HOT_ENCODING = "one_hot_encoding"
 
@@ -105,6 +107,7 @@ class Operators(object):
     FEDERATED_MEAN = "federated_mean"
     FEDERATED_VARIANCE = "federated_variance"
     FEDERATED_STANDARD_DEVIATION = "federated_standard_deviation"
+
 
 class TFJSOperators(object):
     SIGMOID = "sigmoid"
@@ -185,12 +188,13 @@ functions = {'lin': Operators.LINEAR,
              'repeat':Operators.REPEAT,
              'index': Operators.INDEX,
              'join_to_list': Operators.JOIN_TO_LIST,
+             'combine_to_list': Operators.COMBINE_TO_LIST,
              'zeros': Operators.ZEROS,
              'ravint': Operators.RAVINT,
              'cnn_index': Operators.CNN_INDEX,
              'cnn_index_2': Operators.CNN_INDEX_2,
              'cnn_add_at': Operators.CNN_ADD_AT,
-
+             'size': Operators.SIZE,
              # Federated functions
 
              'federated_mean': Operators.FEDERATED_MEAN,
