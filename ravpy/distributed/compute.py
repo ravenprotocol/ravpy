@@ -72,10 +72,10 @@ numpy_functions = {
             'logical_xor': 'np.logical_xor',
 
             #statistics
-            'mean': 'np.mean',
+            'mean': 'mean',
             'average': 'np.average',
             'mode': 'mode',
-            'variance': 'np.var',
+            'variance': 'variance',
             'std': 'np.std', 
             'percentile': 'np.percentile',
             'random': 'np.random',
@@ -351,7 +351,31 @@ def max(a,axis=None,keepdims=False):
         keepdims = True
     else:
         keepdims = False
+    if isinstance(axis,list):
+        axis= tuple(axis)
     result=np.max(a,axis=axis,keepdims=keepdims)
+    return result
+
+def mean(a,axis=None,keepdims=False):
+    if str(keepdims) == 'True':
+        keepdims = True
+    else:
+        keepdims = False
+
+    if isinstance(axis,list):
+        axis= tuple(axis)
+    result=np.mean(a,axis=axis,keepdims=keepdims)
+    return result
+
+def variance(a,axis=None,keepdims=False):
+    if str(keepdims) == 'True':
+        keepdims = True
+    else:
+        keepdims = False
+
+    if isinstance(axis,list):
+        axis= tuple(axis)
+    result=np.var(a,axis=axis,keepdims=keepdims)
     return result
 
 def sum(a,axis=None,keepdims=False):
@@ -359,6 +383,8 @@ def sum(a,axis=None,keepdims=False):
         keepdims = True
     else:
         keepdims = False
+    if isinstance(axis,list):
+        axis= tuple(axis)
     result=np.sum(a,axis=axis,keepdims=keepdims)
     return result
 
