@@ -21,4 +21,4 @@ ENCRYPTION = False
 FTP_TEMP_FILES_FOLDER = os.path.join(os.getcwd(), "ravpy/distributed/temp_files")
 FTP_DOWNLOAD_FILES_FOLDER = os.path.join(os.getcwd(), "ravpy/distributed/downloads")
 
-RAVPY_LOG_FILE = os.path.join(pathlib.Path(__file__).parent.resolve(), "debug.log")
+RAVPY_LOG_FILE = os.path.join(pathlib.Path(__file__).parent.parent.resolve(), "debug.log")

@@ -1,4 +1,19 @@
+import atexit
+
 from .globals import g
+
+
+def exit_handler():
+    g.logger.debug('My application is ending!')
+    if g.client is not None:
+        g.logger.debug("disconnecting")
+        if g.client.connected:
+            g.client.emit("disconnect", namespace="/client")
+    else:
+        g.logger.debug("client is none")
+
+
+atexit.register(exit_handler)
 
 
 def initialize(ravenverse_token):

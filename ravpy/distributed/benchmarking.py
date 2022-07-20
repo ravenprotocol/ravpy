@@ -77,7 +77,7 @@ def benchmark():
             # print("BM OP inside enumerate: ",benchmark_op)
             operator = get_key(benchmark_op['operator'], functions)
             t1 = time.time()
-            print(compute_locally_bm(*benchmark_op['values'], op_type=benchmark_op['op_type'], operator=operator))
+            g.logger.debug(compute_locally_bm(*benchmark_op['values'], op_type=benchmark_op['op_type'], operator=operator))
             t2 = time.time()
             benchmark_results[benchmark_op["operator"]] = t2 - t1
 
