@@ -7,7 +7,7 @@ from ..strings import functions
 
 from .compute import compute_locally_bm
 from .evaluate import waitInterval
-from ..config import RAVENVERSE_URL, BENCHMARK_FILE_NAME, RAVENVERSE_FTP_HOST
+from ..config import RAVENVERSE_URL, BENCHMARK_FILE_NAME, RAVENVERSE_FTP_URL
 from ..ftp import check_credentials
 from ..ftp import get_client as get_ftp_client
 from ..globals import g
@@ -18,14 +18,14 @@ def initialize():
     credentials = get_ftp_credentials()
 
     if credentials is None:
-        print("Unable to fetch credentials")
+        g.logger.debug("Unable to fetch credentials")
         return
 
     creds = ast.literal_eval(credentials['ftp_credentials'])
-    print("Ftp credentials: ", creds)
+    g.logger.debug("Ftp credentials: ", creds)
     time.sleep(2)
 
-    if RAVENVERSE_FTP_HOST != 'localhost' and RAVENVERSE_FTP_HOST != '0.0.0.0':
+    if RAVENVERSE_FTP_URL != 'localhost' and RAVENVERSE_FTP_URL != '0.0.0.0':
         wifi = speedtest.Speedtest()
         upload_speed = int(wifi.upload())
         download_speed = int(wifi.download())
@@ -52,15 +52,15 @@ def initialize():
         g.ftp_upload_blocksize = 8192 * 1000
         g.ftp_download_blocksize = 8192 * 1000
 
-    print("FTP Upload Blocksize: ", g.ftp_upload_blocksize, "  ----   FTP Download Blocksize: ",
-          g.ftp_download_blocksize)
+    g.logger.debug("FTP Upload Blocksize:{}  ----   FTP Download Blocksize:  {}".format(g.ftp_upload_blocksize,
+          g.ftp_download_blocksize))
     g.ftp_client = get_ftp_client(creds['username'], creds['password'])
-    print("Check creds:", check_credentials(creds['username'], creds['password']))
+    g.logger.debug("Check creds:{}".format(check_credentials(creds['username'], creds['password'])))
     g.ftp_client.list_server_files()
 
 
 def benchmark():
-    print("benchmarking")
+    g.logger.debug("benchmarking")
     initialize()
     client = g.client
     initialTimeout = g.initialTimeout
@@ -81,7 +81,7 @@ def benchmark():
             t2 = time.time()
             benchmark_results[benchmark_op["operator"]] = t2 - t1
 
-    print("\nEmitting Benchmark Results...")
+    g.logger.debug("\nEmitting Benchmark Results...")
     client.emit("benchmark_callback", data=json.dumps(benchmark_results), namespace="/client")
     client.sleep(1)
     setTimeout(waitInterval, initialTimeout)

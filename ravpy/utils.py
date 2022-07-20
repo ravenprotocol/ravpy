@@ -20,11 +20,12 @@ from .globals import g
 
 
 def download_file(url, file_name):
+    g.logger.debug("download_file:{}".format(url))
     headers = {"token": g.ravenverse_token}
     with requests.get(url, stream=True, headers=headers) as r:
         with open(file_name, 'wb') as f:
             shutil.copyfileobj(r.raw, f)
-    print("file downloaded")
+    g.logger.debug("file downloaded")
 
 
 def get_key(val, dict):
@@ -67,10 +68,10 @@ def fetch_and_load_context(client, context_filename):
 
 def get_ftp_credentials():
     # Get
-    print("Fetching credentials")
+    g.logger.debug("Fetching credentials:{}".format(RAVENVERSE_URL))
     headers = {"token": g.ravenverse_token}
     r = requests.get(url="{}/client/ftp_credentials/".format(RAVENVERSE_URL), headers=headers)
-    print(r.text)
+    g.logger.debug("Response:{}".format(r.text))
     if r.status_code == 200:
         return r.json()
     return None
@@ -78,14 +79,17 @@ def get_ftp_credentials():
 
 def get_graph(graph_id):
     # Get graph
+    g.logger.debug("get_graph")
     headers = {"token": g.ravenverse_token}
     r = requests.get(url="{}/graph/get/?id={}".format(RAVENVERSE_URL, graph_id), headers=headers)
     if r.status_code == 200:
         return r.json()
     return None
 
+
 def get_federated_graph(graph_id):
     # Get graph
+    g.logger.debug("get_federated_graph")
     headers = {"token": g.ravenverse_token}
     r = requests.get(url="{}/graph/get_federated/?id={}".format(RAVENVERSE_URL, graph_id), headers=headers)
     if r.status_code == 200:
@@ -101,21 +105,21 @@ def list_graphs(approach=None):
         return None
 
     graphs = r.json()
-    print (AsciiTable([["{} Graphs".format(approach)]]).table)
+    g.logger.debug(AsciiTable([["{} Graphs".format(approach)]]).table)
     table_data = [["Id", "Name", "Approach", "Algorithm", "Rules"]]
 
     for graph in graphs:
         table_data.append([graph['id'], graph['name'], graph['approach'], graph['algorithm'], graph['rules']])
 
-    print (AsciiTable(table_data).table)
+    g.logger.debug(AsciiTable(table_data).table)
 
     return graphs
 
 
 def print_graphs(graphs):
-    print("\nGraphs")
+    g.logger.debug("\nGraphs")
     for graph in graphs:
-        print("\nGraph id:{}\n"
+        g.logger.debug("\nGraph id:{}\n"
               "Name:{}\n"
               "Approach:{}\n"
               "Rules:{}".format(graph['id'], graph['name'], graph['approach'], graph['rules']))

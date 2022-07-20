@@ -1,27 +1,40 @@
 import socketio
 import os
-from .config import RAVENVERSE_HOST, RAVENVERSE_PORT, TYPE
+from .config import RAVENVERSE_URL, TYPE
+from .logger import get_logger
 from .singleton_utils import Singleton
 
 
 def get_client(ravenverse_token):
+    g.logger.debug("get_client")
     auth_headers = {"token": ravenverse_token}
-    client = socketio.Client(logger=False, request_timeout=60)
+    client = socketio.Client(logger=False, request_timeout=60, engineio_logger=False)
 
-    @client.on('error',namespace='/client')
+    @client.on('error', namespace='/client')
     def check_error(d):
-        print("\n======= Error: {} =======".format(d))
+        g.logger.debug("\n======= Error: {} =======".format(d))
         client.disconnect()
         os._exit(1)
 
-    try:
-        client.connect(url="http://{}:{}?type={}".format(RAVENVERSE_HOST, RAVENVERSE_PORT, TYPE),
-                       auth=auth_headers,
-                       namespaces=['/client'], wait_timeout=10)
-        return client
-    except Exception as e:
-        print("Exception:{}, Unable to connect to ravsock. Make sure you are using the right hostname and port".format(e))
-        exit()
+    class MyCustomNamespace(socketio.ClientNamespace):
+        def on_connect(self):
+            g.logger.debug("on_connect")
+            pass
+
+        def on_disconnect(self):
+            g.logger.debug("on_disconnect")
+
+    client.register_namespace(MyCustomNamespace('/client'))
+
+    # try:
+    g.logger.debug("{}?type={}".format(RAVENVERSE_URL, TYPE))
+    client.connect(url="{}?type={}".format(RAVENVERSE_URL, TYPE),
+                   auth=auth_headers,
+                   namespaces=['/client'], wait_timeout=100)
+    return client
+    # except Exception as e:
+    #     print("Exception:{}, Unable to connect to ravsock. Make sure you are using the right hostname and port".format(e))
+    #     exit()
 
 
 @Singleton
@@ -40,6 +53,7 @@ class Globals(object):
         self._ftp_download_blocksize = 8192
         self._error = False
         self._ravenverse_token = None
+        self._logger = get_logger()
 
     @property
     def timeoutId(self):
@@ -133,6 +147,10 @@ class Globals(object):
     @ravenverse_token.setter
     def ravenverse_token(self, ravenverse_token):
         self._ravenverse_token = ravenverse_token
+
+    @property
+    def logger(self):
+        return self._logger
 
 
 g = Globals.Instance()
