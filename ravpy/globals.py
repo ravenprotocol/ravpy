@@ -8,7 +8,7 @@ from .singleton_utils import Singleton
 def get_client(ravenverse_token):
     g.logger.debug("get_client")
     auth_headers = {"token": ravenverse_token}
-    client = socketio.Client(logger=False, request_timeout=60, engineio_logger=False)
+    client = socketio.Client(logger=False, request_timeout=100, engineio_logger=True)
 
     @client.on('error', namespace='/client')
     def check_error(d):
@@ -30,6 +30,7 @@ def get_client(ravenverse_token):
     g.logger.debug("{}?type={}".format(RAVENVERSE_URL, TYPE))
     client.connect(url="{}?type={}".format(RAVENVERSE_URL, TYPE),
                    auth=auth_headers,
+                   transports=['websocket'],
                    namespaces=['/client'], wait_timeout=100)
     return client
     # except Exception as e:
