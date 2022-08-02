@@ -1,13 +1,12 @@
 import os
 
-os.environ['RAVENVERSE_URL'] = "http://0.0.0.0:8081"
-os.environ['RAVENVERSE_FTP_URL'] = "0.0.0.0"
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from ravpy.distributed.participate import participate
 from ravpy.initialize import initialize
 
-
 if __name__ == '__main__':
-    client = initialize(
-        "<token>")
+    client = initialize(os.environ.get("TOKEN"))
     participate()
