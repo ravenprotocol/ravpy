@@ -25,32 +25,38 @@ def initialize():
     g.logger.debug("Ftp credentials: ", creds)
     time.sleep(2)
 
-    if RAVENVERSE_FTP_URL != 'localhost' and RAVENVERSE_FTP_URL != '0.0.0.0':
-        wifi = speedtest.Speedtest()
-        upload_speed = int(wifi.upload())
-        download_speed = int(wifi.download())
-        upload_speed = upload_speed / 8
-        download_speed = download_speed / 8
-        if upload_speed <= 3000000:
-            upload_multiplier = 1
-        elif upload_speed < 80000000:
-            upload_multiplier = int((upload_speed / 80000000) * 1000)
+    try:
+        if RAVENVERSE_FTP_URL != 'localhost' and RAVENVERSE_FTP_URL != '0.0.0.0':
+            wifi = speedtest.Speedtest()
+            upload_speed = int(wifi.upload())
+            download_speed = int(wifi.download())
+            upload_speed = upload_speed / 8
+            download_speed = download_speed / 8
+            if upload_speed <= 3000000:
+                upload_multiplier = 1
+            elif upload_speed < 80000000:
+                upload_multiplier = int((upload_speed / 80000000) * 1000)
+            else:
+                upload_multiplier = 1000
+
+            if download_speed <= 3000000:
+                download_multiplier = 1
+            elif download_speed < 80000000:
+                download_multiplier = int((download_speed / 80000000) * 1000)
+            else:
+                download_multiplier = 1000
+
+            g.ftp_upload_blocksize = 8192 * upload_multiplier
+            g.ftp_download_blocksize = 8192 * download_multiplier
+
         else:
-            upload_multiplier = 1000
-
-        if download_speed <= 3000000:
-            download_multiplier = 1
-        elif download_speed < 80000000:
-            download_multiplier = int((download_speed / 80000000) * 1000)
-        else:
-            download_multiplier = 1000
-
-        g.ftp_upload_blocksize = 8192 * upload_multiplier
-        g.ftp_download_blocksize = 8192 * download_multiplier
-
-    else:
+            g.ftp_upload_blocksize = 8192 * 1000
+            g.ftp_download_blocksize = 8192 * 1000
+    
+    except Exception as e:
         g.ftp_upload_blocksize = 8192 * 1000
         g.ftp_download_blocksize = 8192 * 1000
+        
 
     g.logger.debug("FTP Upload Blocksize:{}  ----   FTP Download Blocksize:  {}".format(g.ftp_upload_blocksize,
           g.ftp_download_blocksize))
