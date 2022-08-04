@@ -33,6 +33,21 @@ python setup.py install
 
 ## Usage
 
+### Setting Environment Variables
+Create a .env file and add the following environment variables:
+
+```bash
+RAVENVERSE_URL=http://0.0.0.0:9999
+RAVENVERSE_FTP_URL=0.0.0.0
+```
+
+Load environment variables at the beginning of your code using:
+
+```python
+from dotenv import load_dotenv
+load_dotenv()
+```
+
 ### Authentication
 
 The Provider must connect to the Ravenverse using a unique token that they can generate by logging in on the Ravenverse Website using their MetaMask wallet credentials.   
