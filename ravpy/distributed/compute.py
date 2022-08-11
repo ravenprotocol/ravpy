@@ -257,7 +257,7 @@ def compute_locally(payload, subgraph_id, graph_id):
 
     except Exception as error:
         print('Error: ', error)
-        if 'broken pipe' in str(error).lower():
+        if 'broken pipe' in str(error).lower() or '421' in str(error).lower():
             print('\n\nYou have encountered an IO based Broken Pipe Error. \nRestart terminal and try connecting again')
             sys.exit()
 
