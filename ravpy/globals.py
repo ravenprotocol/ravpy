@@ -8,7 +8,7 @@ from .singleton_utils import Singleton
 def get_client(ravenverse_token):
     g.logger.debug("get_client")
     auth_headers = {"token": ravenverse_token}
-    client = socketio.Client(logger=False, request_timeout=100, engineio_logger=True)
+    client = socketio.Client(logger=False, request_timeout=100, engineio_logger=False)
 
     @client.on('error', namespace='/client')
     def check_error(d):

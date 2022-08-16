@@ -22,7 +22,7 @@ def initialize():
         return
 
     creds = ast.literal_eval(credentials['ftp_credentials'])
-    g.logger.debug("Ftp credentials: ", creds)
+    g.logger.debug("Ftp credentials: {}".format(creds))
     time.sleep(2)
 
     try:
