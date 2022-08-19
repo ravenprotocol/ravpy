@@ -12,10 +12,8 @@ class FTPClient:
         self.ftp.set_pasv(True)
 
     def download(self, filename, path):
-        print('Downloading')
         with open(filename, 'wb') as f:
             self.ftp.retrbinary('RETR ' + path, f.write, blocksize=g.ftp_download_blocksize)
-        print("Downloaded")
 
     def upload(self, filename, path):
         with open(filename, 'rb') as f:

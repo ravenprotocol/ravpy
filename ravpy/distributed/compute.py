@@ -101,7 +101,8 @@ numpy_functions = {
             'cnn_index':'cnn_index',
             'cnn_add_at':'cnn_add_at',
             'cnn_index_2':'cnn_index_2',
-            'size': 'size'
+            'size': 'size',
+            'linear_regression': 'linear_regression'
     }
 
 
@@ -211,6 +212,20 @@ def compute_locally(payload, subgraph_id, graph_id):
 
             result = eval(expression)
 
+        if 'sklearn' in str(type(result)):
+            file_path = upload_result(payload, result)
+
+            return json.dumps({
+                'op_type': payload["op_type"],
+                'file_name': os.path.basename(file_path),
+                # 'username': g.cid,
+                # 'token': g.ravenverse_token,
+                'operator': payload["operator"],
+                "op_id": payload["op_id"],
+                "status": "success"
+            })
+
+
         if not isinstance(result, np.ndarray):
             result = np.array(result)
 
@@ -265,7 +280,7 @@ def compute_locally(payload, subgraph_id, graph_id):
 
 
 def upload_result(payload, result):
-    result_size = result.size * result.itemsize
+    # result_size = result.size * result.itemsize
     try:
         result = result.tolist()
     except:
@@ -276,7 +291,7 @@ def upload_result(payload, result):
     file_path = dump_data(payload['op_id'],result)
     g.ftp_client.upload(file_path, os.path.basename(file_path))
     
-    print("\nFile uploaded!", file_path, ' Size: ', result_size)
+    print("\nFile uploaded!", file_path)#, ' Size: ', result_size)
     os.remove(file_path)
   
     return file_path
@@ -557,3 +572,8 @@ def set_value(a,b,indices):
 def size(a):
     a = np.array(a)
     return a.size
+
+def linear_regression(x,y):
+    from sklearn.linear_model import LinearRegression
+    model = LinearRegression().fit(x, y) 
+    return model
