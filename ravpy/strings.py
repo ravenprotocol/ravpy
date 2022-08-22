@@ -101,10 +101,22 @@ class Operators(object):
 
     # Data Preprocessing
     ONE_HOT_ENCODING = "one_hot_encoding"
-
     SET_VALUE = "set_value"
     SQUEEZE = "squeeze"
+
+    # Machine Learning Ops
     LINEAR_REGRESSION = "linear_regression"
+    LOGISTIC_REGRESSION = "logistic_regression"
+    KNN_CLASSIFIER = "knn_classifier"
+    KNN_REGRESSOR = "knn_regressor"
+    NAIVE_BAYES = "naive_bayes"
+    KMEANS = "kmeans"
+    SVM_SVC = "svm_svc"
+    SVM_SVR = "svm_svr"
+    DECISION_TREE_CLASSIFIER = "decision_tree_classifier"
+    DECISION_TREE_REGRESSOR = "decision_tree_regressor"
+    RANDOM_FOREST_CLASSIFIER = "random_forest_classifier"
+    RANDOM_FOREST_REGRESSOR = "random_forest_regressor"
 
     FEDERATED_MEAN = "federated_mean"
     FEDERATED_VARIANCE = "federated_variance"
@@ -198,9 +210,22 @@ functions = {'lin': Operators.LINEAR,
              'cnn_add_at': Operators.CNN_ADD_AT,
              'size': Operators.SIZE,
              'squeeze': Operators.SQUEEZE,
-             'linear_regression': Operators.LINEAR_REGRESSION,
-             # Federated functions
 
+             # Machine Learning Ops
+             'linear_regression': Operators.LINEAR_REGRESSION,
+             'logistic_regression': Operators.LOGISTIC_REGRESSION,
+             'knn_classifier': Operators.KNN_CLASSIFIER,
+             'knn_regressor': Operators.KNN_REGRESSOR,
+             'naive_bayes': Operators.NAIVE_BAYES,
+             'kmeans': Operators.KMEANS,
+             'svm_svc': Operators.SVM_SVC,
+             'svm_svr': Operators.SVM_SVR,
+             'decision_tree_classifier': Operators.DECISION_TREE_CLASSIFIER,
+             'decision_tree_regressor': Operators.DECISION_TREE_REGRESSOR,
+             'random_forest_classifier': Operators.RANDOM_FOREST_CLASSIFIER,
+             'random_forest_regressor': Operators.RANDOM_FOREST_REGRESSOR,
+
+             # Federated functions
              'federated_mean': Operators.FEDERATED_MEAN,
              'federated_variance': Operators.FEDERATED_VARIANCE,
              'federated_standard_deviation': Operators.FEDERATED_STANDARD_DEVIATION,
