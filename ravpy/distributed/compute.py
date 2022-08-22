@@ -1,21 +1,16 @@
-from ast import operator
-from distutils.log import error
 import os
 import numpy as np
 import json
 import sys
 import time
-#import tensorflow
 from scipy import stats
 
 
 from ..globals import g
-from ..utils import get_key, dump_data, get_ftp_credentials, load_data
-from ..ftp import get_client as get_ftp_client
+from ..utils import get_key, dump_data, load_data
 from ..ftp import check_credentials as check_credentials
 from ..config import FTP_DOWNLOAD_FILES_FOLDER
 from ..strings import functions
-import ast
 
 
 numpy_functions = {
@@ -102,7 +97,20 @@ numpy_functions = {
             'cnn_add_at':'cnn_add_at',
             'cnn_index_2':'cnn_index_2',
             'size': 'size',
-            'linear_regression': 'linear_regression'
+
+            # Machine Learning Ops
+            'linear_regression': 'linear_regression',
+            'logistic_regression': 'logistic_regression',
+            'knn_classifier': 'knn_classifier',
+            'knn_regressor': 'knn_regressor',
+            'naive_bayes': 'naive_bayes',
+            'kmeans': 'kmeans',
+            'svm_svc': 'svm_svc',
+            'svm_svr': 'svm_svr',
+            'decision_tree_classifier': 'decision_tree_classifier',
+            'decision_tree_regressor': 'decision_tree_regressor',
+            'random_forest_classifier': 'random_forest_classifier',
+            'random_forest_regressor': 'random_forest_regressor'
     }
 
 
@@ -576,4 +584,65 @@ def size(a):
 def linear_regression(x,y):
     from sklearn.linear_model import LinearRegression
     model = LinearRegression().fit(x, y) 
+    return model
+
+def knn_classifier(x,y,k=None):
+    if k is None:
+        raise Exception("k param is missing")
+    from sklearn.neighbors import KNeighborsClassifier
+    model = KNeighborsClassifier(n_neighbors=k).fit(x, y) 
+    return model
+
+def knn_regressor(x,y,k=None):
+    if k is None:
+        raise Exception("k param is missing")
+    from sklearn.neighbors import KNeighborsRegressor
+    model = KNeighborsRegressor(n_neighbors=k).fit(x, y) 
+    return model
+
+def logistic_regression(x, y, random_state=0):
+    from sklearn.linear_model import LogisticRegression
+    model = LogisticRegression(random_state=random_state).fit(x, y) 
+    return model
+
+def naive_bayes(x, y):
+    from sklearn.naive_bayes import GaussianNB
+    model = GaussianNB().fit(x, y) 
+    return model
+
+def kmeans(x, n_clusters=None):
+    if n_clusters is None:
+        raise Exception("n_clusters param is missing")
+    from sklearn.cluster import KMeans
+    model = KMeans(n_clusters=n_clusters).fit(x) 
+    return model
+
+def svm_svc(x, y, kernel='linear'):
+    from sklearn.svm import SVC
+    model = SVC(kernel=kernel).fit(x, y) 
+    return model
+
+def svm_svr(x, y, kernel='linear'):
+    from sklearn.svm import SVR
+    model = SVR(kernel=kernel).fit(x, y) 
+    return model
+
+def decision_tree_classifier(x, y):
+    from sklearn.tree import DecisionTreeClassifier
+    model = DecisionTreeClassifier().fit(x, y) 
+    return model
+
+def decision_tree_regressor(x, y):
+    from sklearn.tree import DecisionTreeRegressor
+    model = DecisionTreeRegressor().fit(x, y) 
+    return model
+
+def random_forest_classifier(x, y, n_estimators=100, criterion='gini', max_depth=None, min_samples_split=2):
+    from sklearn.ensemble import RandomForestClassifier
+    model = RandomForestClassifier(n_estimators=n_estimators, criterion=criterion, max_depth=max_depth, min_samples_split=min_samples_split).fit(x, y) 
+    return model
+
+def random_forest_regressor(x, y, n_estimators=100, criterion='squared_error', max_depth=None, min_samples_split=2):
+    from sklearn.ensemble import RandomForestRegressor
+    model = RandomForestRegressor(n_estimators=n_estimators, criterion=criterion, max_depth=max_depth, min_samples_split=min_samples_split).fit(x, y) 
     return model
