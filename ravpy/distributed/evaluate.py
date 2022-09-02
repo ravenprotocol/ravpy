@@ -57,14 +57,6 @@ def compute_subgraph(d):
     g.outputs = {}
     # g.ops = {}
 
-
-# # Check if the client is connected
-# @g.client.on('check_status', namespace="/client")
-# def check_status(d):
-#     global client
-#     # g.logger.debug("check_status:{}".format(d))
-#     client.emit('check_callback', d, namespace='/client')
-
 @g.client.on('ping', namespace="/client")
 def ping(d):
     global client
