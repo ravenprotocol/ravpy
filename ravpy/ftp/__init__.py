@@ -1,3 +1,5 @@
+import os
+
 from ftplib import FTP
 
 from ..config import RAVENVERSE_FTP_URL
@@ -30,8 +32,20 @@ class FTPClient:
 
 
 def get_client(username, password):
-    print("FTP User credentials:", RAVENVERSE_FTP_URL, username, password)
-    return FTPClient(host=RAVENVERSE_FTP_URL, user=username, passwd=password)
+    """
+    Create FTP client
+    :param username: FTP username
+    :param password: FTP password
+    :return: FTP client
+    """
+    try:
+        g.logger.debug("Creating FTP client...")
+        client = FTPClient(host=RAVENVERSE_FTP_URL, user=username, passwd=password)
+        g.logger.debug("FTP client created successfully")
+        return client
+    except Exception as e:
+        g.logger.debug("Unable to create FTP client")
+        os._exit(1)
 
 
 def check_credentials(username, password):

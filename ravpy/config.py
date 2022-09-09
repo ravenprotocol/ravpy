@@ -3,7 +3,7 @@ import pathlib
 from pathlib import Path
 
 BASE_DIR = os.path.join(str(Path.home()), "ravenverse/ravpy")
-
+PROJECT_DIR = pathlib.Path(__file__).parent.parent.resolve()
 CONTEXT_FOLDER = os.path.join(BASE_DIR, "contexts")
 PARAMS_DIR = os.path.join(BASE_DIR, "params")
 
@@ -21,4 +21,10 @@ ENCRYPTION = False
 FTP_TEMP_FILES_FOLDER = os.path.join(os.getcwd(), "ravpy/distributed/temp_files")
 FTP_DOWNLOAD_FILES_FOLDER = os.path.join(os.getcwd(), "ravpy/distributed/downloads")
 
+os.makedirs(FTP_TEMP_FILES_FOLDER, exist_ok=True)
+os.makedirs(FTP_DOWNLOAD_FILES_FOLDER, exist_ok=True)
+
 RAVPY_LOG_FILE = os.path.join(pathlib.Path(__file__).parent.parent.resolve(), "debug.log")
+
+BENCHMARK_DOWNLOAD_PATH = os.path.join(PROJECT_DIR, "ravpy/distributed/downloads/")
+TEMP_FILES_PATH = os.path.join(PROJECT_DIR, "ravpy/distributed/temp_files/")

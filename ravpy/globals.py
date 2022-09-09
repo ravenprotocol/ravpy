@@ -1,41 +1,41 @@
-import socketio
 import os
-from .config import RAVENVERSE_URL, TYPE
+import socketio
+
+from .config import RAVENVERSE_URL, TYPE, RAVENVERSE_FTP_URL
 from .logger import get_logger
 from .singleton_utils import Singleton
 
 
 def get_client(ravenverse_token):
-    g.logger.debug("get_client")
+    """
+    Connect to Ravebverse and return socket client instance
+    :param ravenverse_token: authentication token
+    :return: socket client
+    """
+    g.logger.debug("Connecting to Ravenverse...")
     auth_headers = {"token": ravenverse_token}
     client = socketio.Client(logger=False, request_timeout=100, engineio_logger=False)
 
     @client.on('error', namespace='/client')
     def check_error(d):
-        g.logger.debug("\n======= Error: {} =======".format(d))
+        g.logger.error("Connection error:a{}".format(d))
         client.disconnect()
         os._exit(1)
 
-    class MyCustomNamespace(socketio.ClientNamespace):
-        def on_connect(self):
-            g.logger.debug("on_connect")
-            pass
-
-        def on_disconnect(self):
-            g.logger.debug("on_disconnect")
-
-    client.register_namespace(MyCustomNamespace('/client'))
-
-    # try:
-    g.logger.debug("{}?type={}".format(RAVENVERSE_URL, TYPE))
-    client.connect(url="{}?type={}".format(RAVENVERSE_URL, TYPE),
-                   auth=auth_headers,
-                   transports=['websocket'],
-                   namespaces=['/client'], wait_timeout=100)
-    return client
-    # except Exception as e:
-    #     print("Exception:{}, Unable to connect to ravsock. Make sure you are using the right hostname and port".format(e))
-    #     exit()
+    try:
+        g.logger.debug("Ravenverse url: {}?type={}".format(RAVENVERSE_URL, TYPE))
+        g.logger.debug("Ravenverse FTP host: {}".format(RAVENVERSE_FTP_URL))
+        client.connect(url="{}?type={}".format(RAVENVERSE_URL, TYPE),
+                       auth=auth_headers,
+                       transports=['websocket'],
+                       namespaces=['/client'], wait_timeout=100)
+        g.logger.debug("Successfully connected to Ravenverse")
+        return client
+    except Exception as e:
+        g.logger.error("Error: Unable to connect to Ravenverse. "
+                       "Make sure you are using the right hostname and port. \n{}".format(e))
+        client.disconnect()
+        os._exit(1)
 
 
 @Singleton

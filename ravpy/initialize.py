@@ -1,29 +1,29 @@
 import atexit
+import os
 
 from .globals import g
 
 
 def exit_handler():
-    g.logger.debug('My application is ending!')
+    g.logger.debug('Ravpy is exiting!')
     if g.client is not None:
         g.logger.debug("disconnecting")
         if g.client.connected:
             g.client.emit("disconnect", namespace="/client")
-    else:
-        g.logger.debug("client is none")
 
 
 atexit.register(exit_handler)
 
 
 def initialize(ravenverse_token):
-
+    g.logger.debug("Initializing...")
     g.ravenverse_token = ravenverse_token
-    '''Add Token Authorization code here.'''
 
     client = g.client
     if client is None:
         g.client.disconnect()
-        raise Exception("Unable to connect to ravsock. Make sure you are using the right hostname and port")
-
-    return client
+        g.logger.error("Unable to connect to ravsock. Make sure you are using the right hostname and port")
+        os._exit(1)
+    else:
+        g.logger.debug("Initializied successfully\n")
+        return client

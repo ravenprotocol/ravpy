@@ -1,21 +1,20 @@
-import time
 import json
-import os
-from .compute import compute_locally, emit_error
 
-from ..utils import setTimeout, stopTimer
-
+from .compute import compute_locally
 from ..globals import g
+from ..utils import setTimeout, stopTimer
 
 timeoutId = g.timeoutId
 opTimeout = g.opTimeout
 initialTimeout = g.initialTimeout
 client = g.client
 
+
 @g.client.on('subgraph', namespace="/client")
 def compute_subgraph(d):
     global client, timeoutId
-    print("Received Subgraph : ",d["subgraph_id"]," of Graph : ",d["graph_id"])
+    g.logger.debug("Received subgraph: {} of graph: {}".format(d["subgraph_id"], d["graph_id"]))
+    g.logger.debug("Computing subgraphs(ops)...")
     g.has_subgraph = True
     subgraph_id = d["subgraph_id"]
     graph_id = d["graph_id"]
@@ -25,8 +24,7 @@ def compute_subgraph(d):
     g.error = False
 
     for index in data:
-
-        #Perform
+        # Perform
         operation_type = index["op_type"]
         operator = index["operator"]
         if operation_type is not None and operator is not None:
@@ -40,15 +38,15 @@ def compute_subgraph(d):
         # stopTimer(timeoutId)
         # timeoutId = setTimeout(waitInterval,opTimeout)  
     if not g.error:
-        emit_result_data = {"subgraph_id": d["subgraph_id"],"graph_id":d["graph_id"],"token": g.ravenverse_token, "results":results}
+        emit_result_data = {"subgraph_id": d["subgraph_id"], "graph_id": d["graph_id"], "token": g.ravenverse_token,
+                            "results": results}
         client.emit("subgraph_completed", json.dumps(emit_result_data), namespace="/client")
-        print('Emitted subgraph_completed')
+        g.logger.debug('Subgraph results emitted successfully')
 
     g.has_subgraph = False
-    
-    stopTimer(timeoutId)
-    timeoutId = setTimeout(waitInterval,opTimeout)
 
+    stopTimer(timeoutId)
+    timeoutId = setTimeout(waitInterval, opTimeout)
 
     for ftp_file in g.delete_files_list:
         g.ftp_client.delete_file(ftp_file)
@@ -56,6 +54,9 @@ def compute_subgraph(d):
     g.delete_files_list = []
     g.outputs = {}
     # g.ops = {}
+
+    g.logger.debug("")
+    g.logger.debug("Waiting for more ops and subgraphs...")
 
 
 # # Check if the client is connected
@@ -71,6 +72,7 @@ def ping(d):
     # g.logger.debug("\n\n\nPing: {}".format(d))
     client.emit('pong', d, namespace='/client')
 
+
 def waitInterval():
     # g.logger.debug("waitInterval")
     global client, timeoutId, opTimeout, initialTimeout
@@ -81,7 +83,7 @@ def waitInterval():
     if g.client.connected:
         if not g.has_subgraph:
             client.emit("get_op", json.dumps({
-                    "message": "Send me an aop"
+                "message": "Send me an aop"
             }), namespace="/client")
 
         stopTimer(timeoutId)

@@ -1,31 +1,30 @@
+import ast
+import numpy as np
 import os
 import pickle as pkl
-import shutil
-
-import numpy as np
 import requests
-
+import shutil
+import speedtest
+import time
 from terminaltables import AsciiTable
 
-from .config import ENCRYPTION
+from .config import ENCRYPTION, RAVENVERSE_FTP_URL, BASE_DIR, CONTEXT_FOLDER, RAVENVERSE_URL, FTP_TEMP_FILES_FOLDER
 
 if ENCRYPTION:
     import tenseal as ts
 
-from .config import BASE_DIR, CONTEXT_FOLDER, RAVENVERSE_URL, FTP_TEMP_FILES_FOLDER
-
 from threading import Timer
-
+from .ftp import get_client as get_ftp_client
 from .globals import g
 
 
 def download_file(url, file_name):
-    g.logger.debug("download_file:{}".format(url))
+    g.logger.debug("Downloading benchmark data")
     headers = {"token": g.ravenverse_token}
     with requests.get(url, stream=True, headers=headers) as r:
         with open(file_name, 'wb') as f:
             shutil.copyfileobj(r.raw, f)
-    g.logger.debug("file downloaded")
+    g.logger.debug("Benchmark data downloaded")
 
 
 def get_key(val, dict):
@@ -67,14 +66,20 @@ def fetch_and_load_context(client, context_filename):
 
 
 def get_ftp_credentials():
-    # Get
-    g.logger.debug("Fetching credentials:{}".format(RAVENVERSE_URL))
+    """
+    Fetch ftp credentials
+    :return: json response
+    """
+    g.logger.debug("Fetching ftp credentials...")
     headers = {"token": g.ravenverse_token}
     r = requests.get(url="{}/client/ftp_credentials/".format(RAVENVERSE_URL), headers=headers)
-    g.logger.debug("Response:{}".format(r.text))
     if r.status_code == 200:
+        g.logger.debug("Credentials fetched successfully")
         return r.json()
-    return None
+    else:
+        g.logger.debug("Unable to fetch ftp credentials. Try again after some time or "
+                       "contact our team at team@ravenprotocol.com")
+        return None
 
 
 def get_graph(graph_id):
@@ -100,7 +105,7 @@ def get_federated_graph(graph_id):
 def list_graphs(approach=None):
     # Get graphs
     headers = {"token": g.ravenverse_token}
-    r = requests.get(url="{}/graph/get/all/?approach={}".format(RAVENVERSE_URL,approach), headers=headers)
+    r = requests.get(url="{}/graph/get/all/?approach={}".format(RAVENVERSE_URL, approach), headers=headers)
     if r.status_code != 200:
         return None
 
@@ -120,9 +125,9 @@ def print_graphs(graphs):
     g.logger.debug("\nGraphs")
     for graph in graphs:
         g.logger.debug("\nGraph id:{}\n"
-              "Name:{}\n"
-              "Approach:{}\n"
-              "Rules:{}".format(graph['id'], graph['name'], graph['approach'], graph['rules']))
+                       "Name:{}\n"
+                       "Approach:{}\n"
+                       "Rules:{}".format(graph['id'], graph['name'], graph['approach'], graph['rules']))
 
 
 def get_subgraph_ops(graph_id):
@@ -193,3 +198,57 @@ def load_data(path):
     with open(path, 'rb') as f:
         data = pkl.load(f)
     return np.array(data)
+
+
+def initialize_ftp_client():
+    credentials = get_ftp_credentials()
+
+    if credentials is None:
+        return None
+
+    creds = ast.literal_eval(credentials['ftp_credentials'])
+    time.sleep(2)
+
+    try:
+        g.logger.debug("")
+        g.logger.debug("Testing network speed...")
+        if RAVENVERSE_FTP_URL != 'localhost' and RAVENVERSE_FTP_URL != '0.0.0.0':
+            wifi = speedtest.Speedtest()
+            upload_speed = int(wifi.upload())
+            download_speed = int(wifi.download())
+            upload_speed = upload_speed / 8
+            download_speed = download_speed / 8
+            if upload_speed <= 3000000:
+                upload_multiplier = 1
+            elif upload_speed < 80000000:
+                upload_multiplier = int((upload_speed / 80000000) * 1000)
+            else:
+                upload_multiplier = 1000
+
+            if download_speed <= 3000000:
+                download_multiplier = 1
+            elif download_speed < 80000000:
+                download_multiplier = int((download_speed / 80000000) * 1000)
+            else:
+                download_multiplier = 1000
+
+            g.ftp_upload_blocksize = 8192 * upload_multiplier
+            g.ftp_download_blocksize = 8192 * download_multiplier
+
+        else:
+            g.ftp_upload_blocksize = 8192 * 1000
+            g.ftp_download_blocksize = 8192 * 1000
+
+    except Exception as e:
+        g.ftp_upload_blocksize = 8192 * 1000
+        g.ftp_download_blocksize = 8192 * 1000
+
+    g.logger.debug("FTP Upload Blocksize:{}".format(g.ftp_upload_blocksize))
+    g.logger.debug("FTP Download Blocksize:  {}\n".format(g.ftp_download_blocksize))
+
+    """
+    Create ftp client
+    """
+    g.ftp_client = get_ftp_client(creds['username'], creds['password'])
+
+    return g.ftp_client
