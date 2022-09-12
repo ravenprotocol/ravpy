@@ -9,3 +9,4 @@ scipy
 speedtest-cli
 terminaltables==3.1.10
 websocket-client
+scikit-learn==1.1.1

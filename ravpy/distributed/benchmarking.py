@@ -52,11 +52,10 @@ def initialize():
         else:
             g.ftp_upload_blocksize = 8192 * 1000
             g.ftp_download_blocksize = 8192 * 1000
-    
+
     except Exception as e:
         g.ftp_upload_blocksize = 8192 * 1000
         g.ftp_download_blocksize = 8192 * 1000
-        
 
     g.logger.debug("FTP Upload Blocksize:{}  ----   FTP Download Blocksize:  {}".format(g.ftp_upload_blocksize,
           g.ftp_download_blocksize))
