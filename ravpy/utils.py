@@ -1,40 +1,28 @@
 import os
 import pickle as pkl
 import shutil
-import math
-
 import numpy as np
 import requests
-
 from terminaltables import AsciiTable
-
 from .config import ENCRYPTION
-
 if ENCRYPTION:
     import tenseal as ts
-
 from .config import BASE_DIR, CONTEXT_FOLDER, RAVENVERSE_URL, FTP_TEMP_FILES_FOLDER
-
 from threading import Timer
-
 from .globals import g
 
 
 def download_file(url, file_name):
-    g.logger.debug("download_file:{}".format(url))
     headers = {"token": g.ravenverse_token}
     with requests.get(url, stream=True, headers=headers) as r:
         with open(file_name, 'wb') as f:
             shutil.copyfileobj(r.raw, f)
-    g.logger.debug("file downloaded")
-
 
 def get_key(val, dict):
     for key, value in dict.items():
         if val == value:
             return key
     return "key doesn't exist"
-
 
 def analyze_data(data):
     rank = len(np.array(data).shape)
@@ -46,7 +34,6 @@ def analyze_data(data):
     else:
         return {"rank": rank, "dtype": np.array(data).dtype.__class__.__name__}
 
-
 def dump_context(context, cid):
     filename = "context_{}.txt".format(cid)
     fpath = os.path.join(BASE_DIR, filename)
@@ -55,28 +42,22 @@ def dump_context(context, cid):
 
     return filename, fpath
 
-
 def load_context(file_path):
     with open(file_path, "rb") as f:
         return ts.context_from(f.read())
-
 
 def fetch_and_load_context(client, context_filename):
     client.download(os.path.join(CONTEXT_FOLDER, context_filename), context_filename)
     ckks_context = load_context(os.path.join(CONTEXT_FOLDER, context_filename))
     return ckks_context
 
-
 def get_ftp_credentials():
     # Get
-    g.logger.debug("Fetching credentials:{}".format(RAVENVERSE_URL))
     headers = {"token": g.ravenverse_token}
     r = requests.get(url="{}/client/ftp_credentials/".format(RAVENVERSE_URL), headers=headers)
-    g.logger.debug("Response:{}".format(r.text))
     if r.status_code == 200:
         return r.json()
     return None
-
 
 def get_graph(graph_id):
     # Get graph
@@ -87,7 +68,6 @@ def get_graph(graph_id):
         return r.json()
     return None
 
-
 def get_federated_graph(graph_id):
     # Get graph
     g.logger.debug("get_federated_graph")
@@ -96,7 +76,6 @@ def get_federated_graph(graph_id):
     if r.status_code == 200:
         return r.json()
     return None
-
 
 def list_graphs(approach=None):
     # Get graphs
@@ -116,7 +95,6 @@ def list_graphs(approach=None):
 
     return graphs
 
-
 def print_graphs(graphs):
     g.logger.debug("\nGraphs")
     for graph in graphs:
@@ -124,7 +102,6 @@ def print_graphs(graphs):
               "Name:{}\n"
               "Approach:{}\n"
               "Rules:{}".format(graph['id'], graph['name'], graph['approach'], graph['rules']))
-
 
 def get_subgraph_ops(graph_id):
     # Get subgraph ops
@@ -134,11 +111,9 @@ def get_subgraph_ops(graph_id):
         return r.json()['subgraph_ops']
     return None
 
-
 def get_rank(data):
     rank = len(np.array(data).shape)
     return rank
-
 
 def apply_rules(data_columns, rules, final_column_names):
     data_silo = []
@@ -161,18 +136,15 @@ def apply_rules(data_columns, rules, final_column_names):
         data_silo.append(data_column_values)
     return data_silo
 
-
 def setTimeout(fn, ms, *args, **kwargs):
     timeoutId = Timer(ms / 1000., fn, args=args, kwargs=kwargs)
     timeoutId.start()
     return timeoutId
 
-
 def stopTimer(timeoutId):
     # print("Timer stopped")
     if timeoutId is not None:
         timeoutId.cancel()
-
 
 def dump_data(op_id, value):
     """
@@ -186,7 +158,6 @@ def dump_data(op_id, value):
         pkl.dump(value, f)
     return file_path
 
-
 def load_data(path):
     """
     Load ndarray from file
@@ -194,101 +165,3 @@ def load_data(path):
     with open(path, 'rb') as f:
         data = pkl.load(f)
     return np.array(data)
-
-def accuracy_score(y_true, y_pred):
-    """ Compare y_true to y_pred and return the accuracy """
-    accuracy = np.sum(y_true == y_pred, axis=0) / len(y_true)
-    return accuracy
-
-def determine_padding(filter_shape, output_shape="same"):
-    # No padding
-    if output_shape == "valid":
-        return (0, 0), (0, 0)
-    # Pad so that the output shape is the same as input shape (given that stride=1)
-    elif output_shape == "same":
-        filter_height, filter_width = filter_shape
-
-        # Derived from:
-        # output_height = (height + pad_h - filter_height) / stride + 1
-        # In this case output_height = height and stride = 1. This gives the
-        # expression for the padding below.
-        pad_h1 = int(math.floor((filter_height - 1)/2))
-        pad_h2 = int(math.ceil((filter_height - 1)/2))
-        pad_w1 = int(math.floor((filter_width - 1)/2))
-        pad_w2 = int(math.ceil((filter_width - 1)/2))
-
-        return (pad_h1, pad_h2), (pad_w1, pad_w2)
-
-
-def get_im2col_indices(images_shape, filter_shape, padding, stride=1):
-    # First figure out what the size of the output should be
-    batch_size, channels, height, width = images_shape
-    filter_height, filter_width = filter_shape
-    pad_h, pad_w = padding
-    out_height = int((height + np.sum(pad_h) - filter_height) / stride + 1)
-    out_width = int((width + np.sum(pad_w) - filter_width) / stride + 1)
-
-    i0 = np.repeat(np.arange(filter_height), filter_width)
-    i0 = np.tile(i0, channels)
-    i1 = stride * np.repeat(np.arange(out_height), out_width)
-    j0 = np.tile(np.arange(filter_width), filter_height * channels)
-    j1 = stride * np.tile(np.arange(out_width), out_height)
-    i = i0.reshape(-1, 1) + i1.reshape(1, -1)
-    j = j0.reshape(-1, 1) + j1.reshape(1, -1)
-
-    k = np.repeat(np.arange(channels), filter_height * filter_width).reshape(-1, 1)
-
-    return (k, i, j)
-
-def image_to_column(images, filter_shape, stride, output_shape='same'):
-    filter_height, filter_width = filter_shape
-
-    pad_h, pad_w = determine_padding(filter_shape, output_shape)
-
-    # Add padding to the image
-    images_padded = np.pad(images, ((0, 0), (0, 0), pad_h, pad_w), mode='constant')
-
-    # Calculate the indices where the dot products are to be applied between weights
-    # and the image
-    k, i, j = get_im2col_indices(images.shape, filter_shape, (pad_h, pad_w), stride)
-
-    # Get content from image at those indices
-    cols = images_padded[:, k, i, j]
-    channels = images.shape[1]
-    # Reshape content into column shape
-    cols = cols.transpose(1, 2, 0).reshape(filter_height * filter_width * channels, -1)
-    return cols
-
-def column_to_image(cols, images_shape, filter_shape, stride, output_shape='same'):
-    batch_size, channels, height, width = images_shape
-    pad_h, pad_w = determine_padding(filter_shape, output_shape)
-    height_padded = height + np.sum(pad_h)
-    width_padded = width + np.sum(pad_w)
-    images_padded = np.zeros((batch_size, channels, height_padded, width_padded))
-
-    # Calculate the indices where the dot products are applied between weights
-    # and the image
-    k, i, j = get_im2col_indices(images_shape, filter_shape, (pad_h, pad_w), stride)
-
-    cols = cols.reshape(channels * np.prod(filter_shape), -1, batch_size)
-    cols = cols.transpose(2, 0, 1)
-    # Add column content to the images at the indices
-    np.add.at(images_padded, (slice(None), k, i, j), cols)
-
-    # Return image without padding
-    return images_padded[:, :, pad_h[0]:height+pad_h[0], pad_w[0]:width+pad_w[0]]
-
-def output_shape(input_shape=None, n_filters=None, filter_shape=None, padding=None, stride=None):
-    channels, height, width = input_shape
-    pad_h, pad_w = determine_padding(filter_shape, output_shape=padding)
-    output_height = (height + np.sum(pad_h) - filter_shape[0]) / stride + 1
-    output_width = (width + np.sum(pad_w) - filter_shape[1]) / stride + 1
-    return n_filters, int(output_height), int(output_width)
-
-def pooling_layer_output_shape(input_shape=None, pool_shape=None, stride=None):
-    channels, height, width = input_shape
-    out_height = (height - pool_shape[0]) / stride + 1
-    out_width = (width - pool_shape[1]) / stride + 1
-    assert out_height % 1 == 0
-    assert out_width % 1 == 0
-    return channels, int(out_height), int(out_width)

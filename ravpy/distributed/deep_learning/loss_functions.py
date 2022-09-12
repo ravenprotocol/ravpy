@@ -1,5 +1,5 @@
 import numpy as np
-from ..utils import accuracy_score
+from .utils import accuracy_score
 
 class SquareLoss():
     def __init__(self): pass

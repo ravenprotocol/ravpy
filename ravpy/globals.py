@@ -6,7 +6,6 @@ from .singleton_utils import Singleton
 
 
 def get_client(ravenverse_token):
-    g.logger.debug("get_client")
     auth_headers = {"token": ravenverse_token}
     client = socketio.Client(logger=False, request_timeout=100, engineio_logger=False)
 
@@ -18,24 +17,22 @@ def get_client(ravenverse_token):
 
     class MyCustomNamespace(socketio.ClientNamespace):
         def on_connect(self):
-            g.logger.debug("on_connect")
             pass
 
         def on_disconnect(self):
-            g.logger.debug("on_disconnect")
+            pass
 
     client.register_namespace(MyCustomNamespace('/client'))
 
-    # try:
-    g.logger.debug("{}?type={}".format(RAVENVERSE_URL, TYPE))
-    client.connect(url="{}?type={}".format(RAVENVERSE_URL, TYPE),
-                   auth=auth_headers,
-                   transports=['websocket'],
-                   namespaces=['/client'], wait_timeout=100)
-    return client
-    # except Exception as e:
-    #     print("Exception:{}, Unable to connect to ravsock. Make sure you are using the right hostname and port".format(e))
-    #     exit()
+    try:
+        client.connect(url="{}?type={}".format(RAVENVERSE_URL, TYPE),
+                    auth=auth_headers,
+                    transports=['websocket'],
+                    namespaces=['/client'], wait_timeout=10)
+        return client
+    except Exception as e:
+        print("Exception:{}, Unable to connect to ravsock. Make sure you are using the right hostname and port".format(e))
+        exit()
 
 
 @Singleton
@@ -55,6 +52,7 @@ class Globals(object):
         self._error = False
         self._ravenverse_token = None
         self._logger = get_logger()
+        self._dashboard_data = [['Subgraph ID', 'Graph ID', 'Status']]
 
     @property
     def timeoutId(self):
@@ -153,5 +151,12 @@ class Globals(object):
     def logger(self):
         return self._logger
 
+    @property
+    def dashboard_data(self):
+        return self._dashboard_data
+
+    @dashboard_data.setter
+    def dashboard_data(self, dashboard_data):
+        self._dashboard_data = dashboard_data
 
 g = Globals.Instance()
