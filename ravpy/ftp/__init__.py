@@ -30,7 +30,6 @@ class FTPClient:
 
 
 def get_client(username, password):
-    print("FTP User credentials:", RAVENVERSE_FTP_URL, username, password)
     return FTPClient(host=RAVENVERSE_FTP_URL, user=username, passwd=password)
 
 

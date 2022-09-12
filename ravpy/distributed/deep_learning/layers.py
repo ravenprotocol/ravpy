@@ -1,5 +1,5 @@
 import numpy as np
-from ..utils import image_to_column, column_to_image
+from .utils import image_to_column, column_to_image
 
 class PoolingLayer():
     """A parent class of MaxPooling2D and AveragePooling2D

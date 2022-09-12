@@ -1,3 +1,4 @@
+import os
 import ast
 import json
 import time
@@ -22,7 +23,6 @@ def initialize():
         return
 
     creds = ast.literal_eval(credentials['ftp_credentials'])
-    g.logger.debug("Ftp credentials: {}".format(creds))
     time.sleep(2)
 
     try:
@@ -50,22 +50,18 @@ def initialize():
             g.ftp_download_blocksize = 8192 * download_multiplier
 
         else:
-            g.ftp_upload_blocksize = 8192 * 1000
-            g.ftp_download_blocksize = 8192 * 1000
+            g.ftp_upload_blocksize = 8192 * 10000
+            g.ftp_download_blocksize = 8192 * 10000
 
     except Exception as e:
         g.ftp_upload_blocksize = 8192 * 1000
         g.ftp_download_blocksize = 8192 * 1000
 
-    g.logger.debug("FTP Upload Blocksize:{}  ----   FTP Download Blocksize:  {}".format(g.ftp_upload_blocksize,
-          g.ftp_download_blocksize))
     g.ftp_client = get_ftp_client(creds['username'], creds['password'])
-    g.logger.debug("Check creds:{}".format(check_credentials(creds['username'], creds['password'])))
-    g.ftp_client.list_server_files()
 
 
 def benchmark():
-    g.logger.debug("benchmarking")
+    g.logger.debug("Benchmarking in progress...")
     initialize()
     client = g.client
     initialTimeout = g.initialTimeout
@@ -82,12 +78,18 @@ def benchmark():
             # print("BM OP inside enumerate: ",benchmark_op)
             operator = get_key(benchmark_op['operator'], functions)
             t1 = time.time()
-            g.logger.debug(compute_locally_bm(*benchmark_op['values'], op_type=benchmark_op['op_type'], operator=operator))
+            compute_locally_bm(*benchmark_op['values'], op_type=benchmark_op['op_type'], operator=operator)
             t2 = time.time()
             benchmark_results[benchmark_op["operator"]] = t2 - t1
 
-    g.logger.debug("\nEmitting Benchmark Results...")
+    for file in os.listdir():
+        if file.endswith(".zip"):
+            os.remove(file)
+            
+    g.logger.debug("Emitting Benchmark Results...")
     client.emit("benchmark_callback", data=json.dumps(benchmark_results), namespace="/client")
     client.sleep(1)
+    g.logger.debug("Benchmarking Complete!")
+
     setTimeout(waitInterval, initialTimeout)
     return benchmark_results

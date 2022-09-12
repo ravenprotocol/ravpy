@@ -12,4 +12,3 @@ def participate():
 
     from .benchmarking import benchmark
     bm_results = benchmark()
-    print("Benchmark Results: ", bm_results)
