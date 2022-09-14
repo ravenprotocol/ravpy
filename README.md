@@ -66,6 +66,10 @@ from ravpy.distributed.participate import participate
 participate()
 ```
 
+Upon participation, the Provider will be assigned a subgraph to execute. Once executed, the results will be sent to the Ravsock server.
+
+![provider](https://user-images.githubusercontent.com/36446402/190107295-d1c0fb74-d894-4fea-b1d3-5354352d4f84.gif)
+
 ### Participate in Federated Analytics
 
 ```python
