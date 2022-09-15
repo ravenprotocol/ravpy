@@ -27,6 +27,7 @@ setup(
         "scipy",
         "speedtest-cli",
         "terminaltables==3.1.10",
-        "websocket-client"
+        "websocket-client",
+        "pyinstaller"
     ]
 )
