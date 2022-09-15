@@ -4,11 +4,11 @@ import os
 import sys
 import time
 
-from .op_functions import *
 from ..config import FTP_DOWNLOAD_FILES_FOLDER
 from ..globals import g
 from ..strings import functions
 from ..utils import get_key, dump_data, load_data
+from .op_functions import *
 
 
 def compute_locally_bm(*args, **kwargs):
