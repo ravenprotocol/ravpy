@@ -5,9 +5,9 @@ from .globals import g
 
 
 def exit_handler():
-    g.logger.debug('Ravpy is exiting!')
+    g.logger.debug('Application is Closing!')
     if g.client is not None:
-        g.logger.debug("disconnecting")
+        g.logger.debug("Disconnecting...")
         if g.client.connected:
             g.client.emit("disconnect", namespace="/client")
 
@@ -25,5 +25,5 @@ def initialize(ravenverse_token):
         g.logger.error("Unable to connect to ravsock. Make sure you are using the right hostname and port")
         os._exit(1)
     else:
-        g.logger.debug("Initializied successfully\n")
+        g.logger.debug("Initialized successfully\n")
         return client

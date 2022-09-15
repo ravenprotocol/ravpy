@@ -1,20 +1,25 @@
 import ast
-import numpy as np
 import os
 import pickle as pkl
-import requests
-import shutil
 import speedtest
 import time
-from terminaltables import AsciiTable
 
-from .config import ENCRYPTION, RAVENVERSE_FTP_URL, BASE_DIR, CONTEXT_FOLDER, RAVENVERSE_URL, FTP_TEMP_FILES_FOLDER
+from .config import ENCRYPTION, RAVENVERSE_FTP_URL
 
 if ENCRYPTION:
     import tenseal as ts
 
-from threading import Timer
 from .ftp import get_client as get_ftp_client
+import shutil
+import numpy as np
+import requests
+from terminaltables import AsciiTable
+from .config import ENCRYPTION
+
+if ENCRYPTION:
+    import tenseal as ts
+from .config import BASE_DIR, CONTEXT_FOLDER, RAVENVERSE_URL, FTP_TEMP_FILES_FOLDER
+from threading import Timer
 from .globals import g
 
 

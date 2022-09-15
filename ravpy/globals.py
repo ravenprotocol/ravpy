@@ -13,6 +13,7 @@ def get_client(ravenverse_token):
     :return: socket client
     """
     g.logger.debug("Connecting to Ravenverse...")
+
     auth_headers = {"token": ravenverse_token}
     client = socketio.Client(logger=False, request_timeout=100, engineio_logger=False)
 
@@ -55,6 +56,7 @@ class Globals(object):
         self._error = False
         self._ravenverse_token = None
         self._logger = get_logger()
+        self._dashboard_data = [['Subgraph ID', 'Graph ID', 'Status']]
 
     @property
     def timeoutId(self):
@@ -152,6 +154,14 @@ class Globals(object):
     @property
     def logger(self):
         return self._logger
+
+    @property
+    def dashboard_data(self):
+        return self._dashboard_data
+
+    @dashboard_data.setter
+    def dashboard_data(self, dashboard_data):
+        self._dashboard_data = dashboard_data
 
 
 g = Globals.Instance()

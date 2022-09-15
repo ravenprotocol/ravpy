@@ -7,7 +7,7 @@ long_description = (this_directory / "README.md").read_text()
 
 setup(
     name="ravpy",
-    version="0.8",
+    version="0.9",
     license='MIT',
     author="Raven Protocol",
     author_email='kailash@ravenprotocol.com',
@@ -29,5 +29,6 @@ setup(
         "terminaltables==3.1.10",
         "websocket-client",
         "pyinstaller"
+        "scikit-learn"
     ]
 )
