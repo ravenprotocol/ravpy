@@ -28,3 +28,4 @@ RAVPY_LOG_FILE = os.path.join(pathlib.Path(__file__).parent.parent.resolve(), "d
 
 BENCHMARK_DOWNLOAD_PATH = os.path.join(PROJECT_DIR, "ravpy/distributed/downloads/")
 TEMP_FILES_PATH = os.path.join(PROJECT_DIR, "ravpy/distributed/temp_files/")
+RAVENAUTH_TOKEN_VERIFY_URL = "{}{}".format(os.environ.get("RAVENAUTH_URL"), "/api/token/verify/")

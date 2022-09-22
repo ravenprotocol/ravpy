@@ -4,7 +4,7 @@ import pickle as pkl
 import speedtest
 import time
 
-from .config import ENCRYPTION, RAVENVERSE_FTP_URL
+from .config import ENCRYPTION, RAVENVERSE_FTP_URL, RAVENAUTH_TOKEN_VERIFY_URL
 
 if ENCRYPTION:
     import tenseal as ts
@@ -257,3 +257,17 @@ def initialize_ftp_client():
     g.ftp_client = get_ftp_client(creds['username'], creds['password'])
 
     return g.ftp_client
+
+
+def verify_token(token):
+    """
+    Verify user token
+    :param token: token
+    :return: valid or not
+    """
+    r = requests.post(RAVENAUTH_TOKEN_VERIFY_URL, data={"token": token})
+    if r.status_code != 200:
+        g.logger.debug("Error:{}".format(r.text))
+        return False
+    else:
+        return True
