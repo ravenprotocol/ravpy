@@ -103,6 +103,7 @@ class Operators(object):
     ONE_HOT_ENCODING = "one_hot_encoding"
     SET_VALUE = "set_value"
     SQUEEZE = "squeeze"
+    GET_LAYER_RESULTS="get_layer_result"
 
     # Machine Learning Ops
     LINEAR_REGRESSION = "linear_regression"
@@ -278,6 +279,7 @@ functions = {'lin': Operators.LINEAR,
              'federated_mean': Operators.FEDERATED_MEAN,
              'federated_variance': Operators.FEDERATED_VARIANCE,
              'federated_standard_deviation': Operators.FEDERATED_STANDARD_DEVIATION,
+             'get_layer_result':Operators.GET_LAYER_RESULTS,
              }
 
 
