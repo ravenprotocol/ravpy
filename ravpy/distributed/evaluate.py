@@ -134,3 +134,11 @@ def waitInterval():
 
         stopTimer(timeoutId)
         timeoutId = setTimeout(waitInterval, opTimeout)
+
+    if not g.is_downloading:
+        if not g.is_uploading:
+            if g.noop_counter % 17 == 0:
+                g.ftp_client.ftp.voidcmd('NOOP')
+                print("Nooped")
+    
+    g.noop_counter += 1

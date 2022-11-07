@@ -45,12 +45,15 @@ class Globals(object):
         self._client = None
         self._timeoutId = None
         self._ops = {}
-        self._opTimeout = 50
+        self._opTimeout = 300 #5000
         self._initialTimeout = 100
         self._outputs = {}
         self._ftp_client = None
         self._delete_files_list = []
         self._has_subgraph = False
+        self._is_downloading = False
+        self._is_uploading = False
+        self._noop_counter = 0
         self._ftp_upload_blocksize = 8192
         self._ftp_download_blocksize = 8192
         self._error = False
@@ -130,6 +133,30 @@ class Globals(object):
     @has_subgraph.setter
     def has_subgraph(self, has_subgraph):
         self._has_subgraph = has_subgraph
+
+    @property
+    def is_downloading(self):
+        return self._is_downloading
+
+    @is_downloading.setter
+    def is_downloading(self, is_downloading):
+        self._is_downloading = is_downloading
+
+    @property
+    def is_uploading(self):
+        return self._is_uploading
+
+    @is_uploading.setter
+    def is_uploading(self, is_uploading):
+        self._is_uploading = is_uploading
+
+    @property
+    def noop_counter(self):
+        return self._noop_counter
+
+    @noop_counter.setter
+    def noop_counter(self, noop_counter):
+        self._noop_counter = noop_counter
 
     @outputs.setter
     def outputs(self, outputs):

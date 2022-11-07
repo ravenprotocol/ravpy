@@ -14,12 +14,16 @@ class FTPClient:
         self.ftp.set_pasv(True)
 
     def download(self, filename, path):
+        g.is_downloading = True
         with open(filename, 'wb') as f:
             self.ftp.retrbinary('RETR ' + path, f.write, blocksize=g.ftp_download_blocksize)
+        g.is_downloading = False
 
     def upload(self, filename, path):
+        g.is_uploading = True
         with open(filename, 'rb') as f:
             self.ftp.storbinary('STOR ' + path, f, blocksize=g.ftp_upload_blocksize)
+        g.is_uploading = False
 
     def list_server_files(self):
         self.ftp.retrlines('LIST')
