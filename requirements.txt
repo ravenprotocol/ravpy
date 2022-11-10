@@ -11,3 +11,6 @@ terminaltables==3.1.10
 websocket-client
 pyinstaller
 scikit-learn
+eel
+psutil
+hurry.filesize

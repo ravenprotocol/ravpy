@@ -19,11 +19,11 @@ def initialize(ravenverse_token):
     g.logger.debug("Initializing...")
     g.ravenverse_token = ravenverse_token
 
-    client = g.client
-    if client is None:
+    client = g.get_socket_client()
+    if not client.connected:
         g.client.disconnect()
-        g.logger.error("Unable to connect to ravsock. Make sure you are using the right hostname and port")
-        os._exit(1)
+        g.logger.error("Unable to connect to ravenverse. Make sure you are using the right hostname and port")
+        return None
     else:
         g.logger.debug("Initialized successfully\n")
         return client
