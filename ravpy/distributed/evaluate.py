@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+import socket
 from terminaltables import AsciiTable
 from zipfile import ZipFile
 
@@ -39,6 +40,7 @@ def compute_subgraph(d):
         download_path = os.path.join(FTP_DOWNLOAD_FILES_FOLDER, server_file_path)
 
         try:
+            g.ftp_client.ftp.voidcmd('NOOP')
             g.ftp_client.download(download_path, os.path.basename(server_file_path))
 
         except Exception as error:
@@ -119,12 +121,30 @@ def compute_subgraph(d):
 @g.client.on('ping', namespace="/client")
 def ping(d):
     global client
+    g.ping_timeout_counter = 0
     client.emit('pong', d, namespace='/client')
 
-
+@g.client.on('redundant_subgraph', namespace="/client")
+def redundant_subgraph(d):
+    subgraph_id = d['subgraph_id']
+    graph_id = d['graph_id']
+    for i in range(len(g.dashboard_data)):
+        if g.dashboard_data[i][0] == subgraph_id and g.dashboard_data[i][1] == graph_id:
+            g.dashboard_data[i][2] = "redundant_computation"
+    os.system('clear')
+    print(AsciiTable([['Provider Dashboard']]).table)
+    print(AsciiTable(g.dashboard_data).table)
+    
 def waitInterval():
     global client, timeoutId, opTimeout, initialTimeout
     client = g.client
+
+    try:
+        sock = socket.create_connection(('8.8.8.8',53))
+        sock.close()
+    except Exception as e:
+        print('\n ----------- Device offline -----------')
+        os._exit(1)
 
     if g.client.connected:
         if not g.has_subgraph:
@@ -138,7 +158,22 @@ def waitInterval():
     if not g.is_downloading:
         if not g.is_uploading:
             if g.noop_counter % 17 == 0:
-                g.ftp_client.ftp.voidcmd('NOOP')
-                print("Nooped")
+                try:
+                    g.ftp_client.ftp.voidcmd('NOOP')
+                    g.ping_timeout_counter += 1
+                except Exception as e:
+                    exit_handler()
+                    os._exit(1)
+
+    if g.ping_timeout_counter > 10:
+        exit_handler()
+        os._exit(1)
     
     g.noop_counter += 1
+
+def exit_handler():
+    g.logger.debug('Application is Closing!')
+    if g.client is not None:
+        g.logger.debug("Disconnecting...")
+        if g.client.connected:
+            g.client.emit("disconnect", namespace="/client")

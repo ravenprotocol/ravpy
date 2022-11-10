@@ -56,6 +56,7 @@ class Globals(object):
         self._noop_counter = 0
         self._ftp_upload_blocksize = 8192
         self._ftp_download_blocksize = 8192
+        self._ping_timeout_counter = 0
         self._error = False
         self._ravenverse_token = None
         self._logger = get_logger()
@@ -157,6 +158,14 @@ class Globals(object):
     @noop_counter.setter
     def noop_counter(self, noop_counter):
         self._noop_counter = noop_counter
+
+    @property
+    def ping_timeout_counter(self):
+        return self._ping_timeout_counter
+
+    @ping_timeout_counter.setter
+    def ping_timeout_counter(self, ping_timeout_counter):
+        self._ping_timeout_counter = ping_timeout_counter
 
     @outputs.setter
     def outputs(self, outputs):
