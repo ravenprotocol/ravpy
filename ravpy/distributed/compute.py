@@ -69,9 +69,15 @@ def compute_locally(payload, subgraph_id, graph_id):
                 temp = ast.literal_eval(params[i])
                 if type(temp) == dict:
                     params[i] = temp
-            elif type(params[i]) == dict and 'op_id' in params[i].keys():
-                op_id = params[i]["op_id"]
-                param_value = g.outputs[op_id]
+            elif type(params[i]) == dict:
+                if 'op_id' in params[i].keys():
+                    op_id = params[i]["op_id"]
+                    param_value = g.outputs[op_id]
+                elif 'value' in params[i].keys():
+                    download_path = os.path.join(FTP_DOWNLOAD_FILES_FOLDER,
+                                                    os.path.basename(params[i]["path"]))
+                    param_value = load_data(download_path).tolist()
+                
                 params[i] = param_value
 
         if op_type == "unary":
@@ -330,7 +336,7 @@ def get_binary_result(value1, value2, params, operator):
         result = one_hot_encoding(value1, value2, params=params)
     elif operator == 'find_indices':
         result = find_indices(value1, value2, params=params)
-    elif operator == 'concatenate':
+    elif operator == 'concat':
         result = concatenate(value1, value2, params=params)
     elif operator == 'join_to_list':
         result = join_to_list(value1, value2, params=params)
