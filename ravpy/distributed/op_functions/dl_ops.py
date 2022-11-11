@@ -594,3 +594,7 @@ def backward_pass_flatten(accum_grad, params=None):#prev_input=None, input_layer
         'accum_grad': accum_grad.reshape(prev_shape).tolist()
     }
     return backward_pass_output
+
+def get_layer_result(X,params=None):
+    result=np.array(X['result'])
+    return result.tolist()

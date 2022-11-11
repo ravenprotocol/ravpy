@@ -38,7 +38,8 @@ def compute_locally_bm(*args, **kwargs):
 def compute_locally(payload, subgraph_id, graph_id):
     try:
         # print("Computing ",payload["operator"])
-        # print('\n\nPAYLOAD: ',payload)
+        # print('\n\nPAYLOAD: ',payload['operator'])
+
 
         values = []
 
@@ -279,6 +280,8 @@ def get_unary_result(value1, params, operator):
         result = forward_pass_flatten(value1, params=params)
     elif operator == "backward_pass_flatten":
         result = backward_pass_flatten(value1, params=params)
+    elif operator == "get_layer_result":
+        result = get_layer_result(value1, params=params)
 
     return result
 
