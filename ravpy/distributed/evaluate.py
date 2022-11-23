@@ -6,7 +6,7 @@ from terminaltables import AsciiTable
 from zipfile import ZipFile
 
 from .compute import compute_locally, emit_error
-from ..config import FTP_DOWNLOAD_FILES_FOLDER
+from ..config import FTP_DOWNLOAD_FILES_FOLDER, FTP_TEMP_FILES_FOLDER
 from ..globals import g
 from ..utils import setTimeout, stopTimer
 
@@ -21,7 +21,6 @@ def compute_subgraph(d):
     global client, timeoutId
 
     os.system('clear')
-    # print("Received Subgraph : ",d["subgraph_id"]," of Graph : ",d["graph_id"])
     print(AsciiTable([['Provider Dashboard']]).table)
     g.dashboard_data.append([d["subgraph_id"], d["graph_id"], "Computing"])
     print(AsciiTable(g.dashboard_data).table)
@@ -89,6 +88,14 @@ def compute_subgraph(d):
 
     if not g.error:
 
+        for temp_file in os.listdir(FTP_TEMP_FILES_FOLDER):
+            if 'temp_' in temp_file and '.pkl' in temp_file:
+                file_path = os.path.join(FTP_TEMP_FILES_FOLDER, temp_file)
+                with ZipFile('local_{}_{}.zip'.format(subgraph_id, graph_id), 'a') as zipObj2:
+                    zipObj2.write(file_path, os.path.basename(file_path))
+
+                os.remove(file_path)
+
         # check if file exists
         zip_file_name = 'local_{}_{}.zip'.format(subgraph_id, graph_id)
         if os.path.exists(zip_file_name):
@@ -98,7 +105,7 @@ def compute_subgraph(d):
         emit_result_data = {"subgraph_id": d["subgraph_id"], "graph_id": d["graph_id"], "token": g.ravenverse_token,
                             "results": results}
         client.emit("subgraph_completed", json.dumps(emit_result_data), namespace="/client")
-        # print('Emitted subgraph_completed')
+
 
         os.system('clear')
         g.dashboard_data[-1][2] = "Computed"
@@ -107,15 +114,11 @@ def compute_subgraph(d):
 
     g.has_subgraph = False
 
-    stopTimer(timeoutId)
-    timeoutId = setTimeout(waitInterval, opTimeout)
-
     delete_dir = FTP_DOWNLOAD_FILES_FOLDER
     for f in os.listdir(delete_dir):
         os.remove(os.path.join(delete_dir, f))
 
     g.delete_files_list = []
-    g.outputs = {}
 
 
 @g.client.on('ping', namespace="/client")
@@ -147,11 +150,6 @@ def waitInterval():
         os._exit(1)
 
     if g.client.connected:
-        if not g.has_subgraph:
-            client.emit("get_op", json.dumps({
-                "message": "Send me an aop"
-            }), namespace="/client")
-
         stopTimer(timeoutId)
         timeoutId = setTimeout(waitInterval, opTimeout)
 
@@ -177,3 +175,8 @@ def exit_handler():
         g.logger.debug("Disconnecting...")
         if g.client.connected:
             g.client.emit("disconnect", namespace="/client")
+
+    dir = FTP_TEMP_FILES_FOLDER
+    if os.path.exists(dir):
+        for f in os.listdir(dir):
+            os.remove(os.path.join(dir, f))

@@ -4,10 +4,10 @@ import os
 import sys
 import time
 
-from ..config import FTP_DOWNLOAD_FILES_FOLDER
+from ..config import FTP_DOWNLOAD_FILES_FOLDER, FTP_TEMP_FILES_FOLDER
 from ..globals import g
 from ..strings import functions
-from ..utils import get_key, dump_data, load_data
+from ..utils import get_key, dump_data, load_data, load_data_raw
 from .op_functions import *
 
 
@@ -15,7 +15,7 @@ def compute_locally_bm(*args, **kwargs):
     operator = kwargs.get("operator", None)
     op_type = kwargs.get("op_type", None)
     param_args = kwargs.get("params", None)
-    # print("Operator", operator,"Op Type:",op_type)
+
     if op_type == "unary":
         value1 = args[0]
         params = {}
@@ -37,11 +37,7 @@ def compute_locally_bm(*args, **kwargs):
 # async
 def compute_locally(payload, subgraph_id, graph_id):
     try:
-        # print("Computing ",payload["operator"])
-        # print('\n\nPAYLOAD: ',payload)
-
         values = []
-
         for i in range(len(payload["values"])):
             if "value" in payload["values"][i].keys():
                 if "path" not in payload["values"][i].keys():
@@ -49,16 +45,16 @@ def compute_locally(payload, subgraph_id, graph_id):
 
                 else:
                     download_path = os.path.join(FTP_DOWNLOAD_FILES_FOLDER,
-                                                 os.path.basename(payload["values"][i]["path"]))
+                                                    os.path.basename(payload["values"][i]["path"]))
                     value = load_data(download_path).tolist()
                     values.append(value)
 
             elif "op_id" in payload["values"][i].keys():
-                values.append(g.outputs[payload['values'][i]['op_id']])
+                value_path = os.path.join(FTP_TEMP_FILES_FOLDER, "temp_{}.pkl".format(payload['values'][i]['op_id']))
+                value = load_data_raw(value_path)
+                values.append(value) #g.outputs[payload['values'][i]['op_id']])
 
         payload["values"] = values
-
-        # print("Payload Values: ", payload)
 
         op_type = payload["op_type"]
         operator = get_key(payload["operator"], functions)
@@ -72,7 +68,8 @@ def compute_locally(payload, subgraph_id, graph_id):
             elif type(params[i]) == dict:
                 if 'op_id' in params[i].keys():
                     op_id = params[i]["op_id"]
-                    param_value = g.outputs[op_id]
+                    param_path = os.path.join(FTP_TEMP_FILES_FOLDER, "temp_{}.pkl".format(op_id))
+                    param_value = load_data_raw(param_path)
                 elif 'value' in params[i].keys():
                     download_path = os.path.join(FTP_DOWNLOAD_FILES_FOLDER,
                                                     os.path.basename(params[i]["path"]))
@@ -99,8 +96,7 @@ def compute_locally(payload, subgraph_id, graph_id):
         if 'dict' in str(type(result)):
             file_path = upload_result(payload, result, subgraph_id=subgraph_id,
                                       graph_id=graph_id)  # upload_result(payload, result)
-            g.outputs[payload["op_id"]] = result
-
+            
             return json.dumps({
                 'op_type': payload["op_type"],
                 'file_name': os.path.basename(file_path),
@@ -112,37 +108,16 @@ def compute_locally(payload, subgraph_id, graph_id):
         if not isinstance(result, np.ndarray):
             result = np.array(result)
 
-        result_byte_size = result.size * result.itemsize
+        file_path = upload_result(payload, result, subgraph_id=subgraph_id,
+                                    graph_id=graph_id)  # upload_result(payload, result)
 
-        if result_byte_size < (30 * 1000000) // 10000:
-            try:
-                result = result.tolist()
-            except:
-                result = result
-
-            g.outputs[payload["op_id"]] = result
-
-            return json.dumps({
-                'op_type': payload["op_type"],
-                'result': result,
-                'operator': payload["operator"],
-                "op_id": payload["op_id"],
-                "status": "success"
-            })
-
-        else:
-
-            file_path = upload_result(payload, result, subgraph_id=subgraph_id,
-                                      graph_id=graph_id)  # upload_result(payload, result)
-            g.outputs[payload["op_id"]] = result.tolist()
-
-            return json.dumps({
-                'op_type': payload["op_type"],
-                'file_name': os.path.basename(file_path),
-                'operator': payload["operator"],
-                "op_id": payload["op_id"],
-                "status": "success"
-            })
+        return json.dumps({
+            'op_type': payload["op_type"],
+            'file_name': os.path.basename(file_path),
+            'operator': payload["operator"],
+            "op_id": payload["op_id"],
+            "status": "success"
+        })
 
     except Exception as error:
         print('Error: ', error)
@@ -394,15 +369,7 @@ def upload_result(payload, result, subgraph_id=None, graph_id=None):
         result = result.tolist()
     except:
         result = result
-
     file_path = dump_data(payload['op_id'], result)
-
-    from zipfile import ZipFile
-    with ZipFile('local_{}_{}.zip'.format(subgraph_id, graph_id), 'a') as zipObj2:
-        zipObj2.write(file_path, os.path.basename(file_path))
-
-    os.remove(file_path)
-
     return file_path
 
 

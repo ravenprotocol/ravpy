@@ -2,7 +2,7 @@ import os
 import socket
 from ftplib import FTP
 
-from ..config import RAVENVERSE_FTP_URL
+from ..config import RAVENVERSE_FTP_URL, FTP_TEMP_FILES_FOLDER
 from ..globals import g
 
 try:
@@ -127,3 +127,8 @@ def exit_handler():
         g.logger.debug("Disconnecting...")
         if g.client.connected:
             g.client.emit("disconnect", namespace="/client")
+
+    dir = FTP_TEMP_FILES_FOLDER
+    if os.path.exists(dir):
+        for f in os.listdir(dir):
+            os.remove(os.path.join(dir, f))

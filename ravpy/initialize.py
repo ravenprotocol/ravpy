@@ -4,6 +4,7 @@ import os
 from .globals import g
 
 from .utils import isLatestVersion
+from .config import FTP_TEMP_FILES_FOLDER
 
 def exit_handler():
     g.logger.debug('Application is Closing!')
@@ -12,6 +13,10 @@ def exit_handler():
         if g.client.connected:
             g.client.emit("disconnect", namespace="/client")
 
+    dir = FTP_TEMP_FILES_FOLDER
+    if os.path.exists(dir):
+        for f in os.listdir(dir):
+            os.remove(os.path.join(dir, f))
 
 atexit.register(exit_handler)
 

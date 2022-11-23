@@ -42,12 +42,10 @@ def isLatestVersion(pkgName):
     return latest_version == current_version
 
 def download_file(url, file_name):
-    g.logger.debug("Downloading benchmark data")
     headers = {"token": g.ravenverse_token}
     with requests.get(url, stream=True, headers=headers) as r:
         with open(file_name, 'wb') as f:
             shutil.copyfileobj(r.raw, f)
-    g.logger.debug("Benchmark data downloaded")
 
 
 def get_key(val, dict):
@@ -107,7 +105,6 @@ def get_ftp_credentials():
 
 def get_graph(graph_id):
     # Get graph
-    g.logger.debug("get_graph")
     headers = {"token": g.ravenverse_token}
     r = requests.get(url="{}/graph/get/?id={}".format(RAVENVERSE_URL, graph_id), headers=headers)
     if r.status_code == 200:
@@ -117,7 +114,6 @@ def get_graph(graph_id):
 
 def get_federated_graph(graph_id):
     # Get graph
-    g.logger.debug("get_federated_graph")
     headers = {"token": g.ravenverse_token}
     r = requests.get(url="{}/graph/get_federated/?id={}".format(RAVENVERSE_URL, graph_id), headers=headers)
     if r.status_code == 200:
@@ -210,7 +206,7 @@ def dump_data(op_id, value):
         os.remove(file_path)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, 'wb') as f:
-        pkl.dump(value, f)
+        pkl.dump(value, f, protocol=pkl.HIGHEST_PROTOCOL)
     return file_path
 
 
@@ -222,6 +218,13 @@ def load_data(path):
         data = pkl.load(f)
     return np.array(data)
 
+def load_data_raw(path):
+    """
+    Load data from file
+    """
+    with open(path, 'rb') as f:
+        data = pkl.load(f)
+    return data
 
 def initialize_ftp_client():
     credentials = get_ftp_credentials()
