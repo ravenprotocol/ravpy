@@ -24,11 +24,16 @@ setup(
         "python-socketio==5.4.1",
         "requests==2.27.1",
         "python-dotenv",
-        "scipy",
         "speedtest-cli",
         "terminaltables==3.1.10",
         "websocket-client",
         "pyinstaller",
-        "scikit-learn"
-    ]
+        "scikit-learn",
+        "psutil",
+        "hurry.filesize",
+        "sqlalchemy",
+        "sqlalchemy-utils",
+    ],
+    app=["ui2.py"],
+    setup_requires=["py2app"],
 )

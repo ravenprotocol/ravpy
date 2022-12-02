@@ -2,6 +2,7 @@ import os
 import socketio
 
 from .config import RAVENVERSE_URL, TYPE, RAVENVERSE_FTP_URL
+from .db import DBManager
 from .logger import get_logger
 from .singleton_utils import Singleton
 
@@ -50,6 +51,9 @@ class Globals(object):
         self._ravenverse_token = None
         self._logger = get_logger()
         self._dashboard_data = [['Subgraph ID', 'Graph ID', 'Status']]
+        self._ravdb = DBManager()
+        self._ravdb.logger = self._logger
+        self._socket_client = self.get_socket_client()
 
     @property
     def timeoutId(self):
@@ -93,19 +97,17 @@ class Globals(object):
 
     @property
     def client(self):
-        if self._client is not None:
-            return self._client
-
-        if self._client is None:
-            self._client = self.get_socket_client()
-            return self._client
+        return self._client
 
     def get_socket_client(self):
         from .socket import SocketClient
-        socket_client = SocketClient()
-        socket_client.connect(self._ravenverse_token)
-        self._client = socket_client.client
-        return self._client
+        self._socket_client = SocketClient(self.logger)
+        self._client = self._socket_client.client
+        return self._socket_client
+
+    def connect_socket_client(self):
+        self._socket_client.connect(self._ravenverse_token)
+        self._client = self._socket_client.client
 
     @property
     def ftp_client(self):
@@ -162,6 +164,10 @@ class Globals(object):
     @dashboard_data.setter
     def dashboard_data(self, dashboard_data):
         self._dashboard_data = dashboard_data
+
+    @property
+    def ravdb(self):
+        return self._ravdb
 
 
 g = Globals.Instance()

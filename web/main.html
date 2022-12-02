@@ -107,7 +107,7 @@
 
         <div class="container mx-auto px-4 py-1 hidden" id="dashboard_container">
             <div class="max-w-6xl mx-auto">
-                <h2 class="font-rubik font-light leading-tight text-4xl mt-0 mb-2 text-white mt-10 text-l">
+                <h2 class="font-rubik font-light leading-tight text-3xl mb-10 text-white mt-10 text-l">
                     Welcome, <span class="font-bold">Ravenverse Provider!</span></h2>
 
                 <div class="relative m-2 md:max-w-6xl md:mx-auto lg:max-w-6xl lg:mx-auto mt-2 md:mt-4
@@ -150,8 +150,70 @@
                 </div>
 
                 <div class="bg-bunting p-4">
-                    <h1 class="text-xl font-medium text-white">Logs</h1>
-                    <div id="logsContainer" class="bg-white w-full h-96 rounded p-4 mt-4 overflow-y-scroll">
+                    <div>
+                        <div class="flex justify-between items-center">
+                            <h1 class="text-xl font-medium text-white">Graphs received</h1>
+                            <img src="img/reload.svg" class="h-6 mr-2 cursor-pointer" alt="reload"
+                                 id="reloadSubgraphsBt"/>
+                        </div>
+
+                        <div class="overflow-x-auto overflow-y-auto h-72 relative shadow-md sm:rounded-lg mt-4 bg-gray-50">
+                            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                                <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
+                                <tr>
+                                    <th scope="col" class="py-3 px-6 bg-gray-100 dark:bg-gray-800">
+                                        Graph id
+                                    </th>
+                                    <th scope="col" class="py-3 px-6 bg-gray-100 dark:bg-gray-800">
+                                        Subgraph id
+                                    </th>
+                                    <th scope="col" class="py-3 px-6 bg-gray-100 dark:bg-gray-800">
+                                        Status
+                                    </th>
+                                    <th scope="col" class="py-3 px-6 bg-gray-100 dark:bg-gray-800">
+                                        Progress(%)
+                                    </th>
+                                    <th scope="col" class="py-3 px-6 bg-gray-100 dark:bg-gray-800">
+                                        Reward(Tokens)
+                                    </th>
+                                </tr>
+                                </thead>
+                                <tbody id="subgraphs-body">
+                                <!--                                    <tr class="border-b border-gray-200 dark:border-gray-700">-->
+                                <!--                                        <th scope="row"-->
+                                <!--                                            class="py-4 px-6 font-medium text-gray-900 whitespace-nowrap bg-gray-50 dark:text-white dark:bg-gray-800">-->
+                                <!--                                            1-->
+                                <!--                                        </th>-->
+                                <!--                                        <td class="py-4 px-6 bg-gray-50 dark:bg-gray-800">-->
+                                <!--                                            1-->
+                                <!--                                        </td>-->
+                                <!--                                        <td class="py-4 px-6 bg-gray-50 dark:bg-gray-800">-->
+                                <!--                                            Computing-->
+                                <!--                                        </td>-->
+                                <!--                                        <td class="py-4 px-6 bg-gray-50 dark:bg-gray-800">-->
+                                <!--                                            10%-->
+                                <!--                                        </td>-->
+                                <!--                                        <td class="py-4 px-6 bg-gray-50 dark:bg-gray-800">-->
+                                <!--                                            1000-->
+                                <!--                                        </td>-->
+                                <!--                                    </tr>-->
+                                </tbody>
+                            </table>
+
+<!--                            <div class="flex items-center justify-center space-x-2 animate-pulse absolute top-1/2 left-1/2 hidden" id="spinner2">-->
+<!--                                <div class="w-12 h-12 bg-gradient-to-r from-blackRussian to-bunting rounded-full mt-10">-->
+<!--                                </div>-->
+<!--                            </div>-->
+                        </div>
+                    </div>
+
+                </div>
+<div class="bg-bunting p-4 mt-4">
+                    <div>
+                        <h1 class="text-xl font-medium text-white">Logs</h1>
+                        <div id="logsContainer"
+                             class="bg-white w-full h-96 rounded p-4 mt-4 overflow-y-scroll">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -171,6 +233,7 @@
                 $("#dashboard_container").show()
                 $("#disconnectButton").show()
                 getSystemConfig()
+                getSubgraphs()
             } else if (status === "failure") {
                 $("#access_token_container").show()
                 $("#dashboard_container").hide()
@@ -182,6 +245,7 @@
         $("#disconnectButton").on("click", function () {
             localStorage.removeItem("access_token")
             window.location.reload()
+            eel.delete_subgraphs()
         })
 
         $("#enterButton").on("click", function () {
@@ -205,6 +269,9 @@
                     $("#disconnectButton").show()
                     localStorage.setItem("access_token", access_token)
                     getSystemConfig()
+                    getSubgraphs()
+                    $("#subgraphs-body").empty()
+                    $("#logsContainer").empty()
                 } else if (status === "failure") {
                     console.log(message)
                     Swal.fire({
@@ -221,10 +288,12 @@
         function getSystemConfig() {
             eel.get_system_config()().then((result) => {
                 console.log(result)
-                $("#ramConfig").append("<span class='text-slate-300'>Total:</span> <span class='underline'>" + result.ram_total + "</span><br/><span class='text-slate-300'>Available:</span> <span class='underline'>" + result.ram_available + "</span>")
-                $("#cpuConfig").append("<span class='text-slate-300'>Total:</span> <span class='underline'>" + result.cpu_count + "</span><br/><span class='text-slate-300'>Available(%):</span> <span class='underline'>" + result.cpu_percent + "</span>")
-                $("#storageConfig").append("<span class='text-slate-300'>Total:</span> <span class='underline'>" + result.storage_total + "</span><br/><span class='text-slate-300'>Available:</span> <span class='underline'>" + result.storage_available + "</span>")
+                $("#ramConfig").html("<span class='text-slate-300'>Total:</span> <span class='underline'>" + result.ram_total + "</span><br/><span class='text-slate-300'>Available:</span> <span class='underline'>" + result.ram_available + "</span>")
+                $("#cpuConfig").html("<span class='text-slate-300'>Total:</span> <span class='underline'>" + result.cpu_count + "</span><br/><span class='text-slate-300'>Available(%):</span> <span class='underline'>" + result.cpu_percent + "</span>")
+                $("#storageConfig").html("<span class='text-slate-300'>Total:</span> <span class='underline'>" + result.storage_total + "</span><br/><span class='text-slate-300'>Available:</span> <span class='underline'>" + result.storage_available + "</span>")
             })
+
+            setTimeout(getSystemConfig, 10000)
         }
 
         // Three steps
@@ -232,31 +301,86 @@
         // 2. participate
 
         $("#participateButton").on("click", function () {
-            eel.initialize_exposed(localStorage.getItem("access_token"))().then((initialized) => {
-                if(initialized){
-                    $("#participateTitle").text("Participating...")
-                    $("#participateButton").hide()
-                    $("#stopParticipation").show()
-                    eel.participate_exposed()().then(() => {
-                    })
+            $("#participateButton span").text("Starting...")
+            eel.participate(localStorage.getItem("access_token"))().then((initialized) => {
+                if (initialized) {
+                    $("#participateButton span").text("Start")
+                    clientConnected()
+                }else{
+                    $("#participateButton span").text("Start")
+                    clientDisconnected()
                 }
             })
         })
 
-        $("#stopParticipation").on("click", function (){
-            eel.disconnect()().then((result)=>{
-                $("#participateTitle").text("Participate")
-                $("#participateButton").show()
-                $("#stopParticipation").hide()
+        $("#stopParticipation").on("click", function () {
+            eel.disconnect()().then((result) => {
+                clientDisconnected()
             })
         })
 
         eel.expose(getLog)
+
         function getLog(log) {
-            $("#logsContainer").append(log)
-            $("#logsContainer").append("<br/>")
+            console.log(log.message, log.message.length)
+            let log_ = ""
+            if (log.message.length === 0) {
+                log_ = "<div class='mt-3 h-4'>&nbsp;</div>"
+            } else {
+                log_ = "<div class='mt-3'>" + log.message + "&nbsp;&nbsp;&nbsp;&nbsp;<span class='text-slate-400'>[" + log.levelname + "] " + log.asctime + "</span></div>"
+            }
+
+            $("#logsContainer").append(log_)
             $('#logsContainer').scrollTop($('#logsContainer')[0].scrollHeight);
         }
+
+        eel.expose(clientDisconnected)
+
+        function clientDisconnected() {
+            $("#participateTitle").text("Participate")
+            $("#participateButton").show()
+            $("#stopParticipation").hide()
+        }
+
+        eel.expose(clientConnected)
+
+        function clientConnected() {
+            $("#participateTitle").text("Participating...")
+            $("#participateButton").hide()
+            $("#stopParticipation").show()
+        }
+
+        function getSubgraphs() {
+            eel.get_subgraphs()().then((subgraphs) => {
+                console.log("subgraphs", subgraphs)
+                $("#subgraphs-body").empty()
+                subgraphs.forEach((subgraph) => {
+                    let row = "<tr>"
+                    row += `<td class="py-4 px-6 bg-gray-50 dark:bg-gray-800">${subgraph.graph_id}</td>`
+                    row += `<td class="py-4 px-6 bg-gray-50 dark:bg-gray-800">${subgraph.subgraph_id}</td>`
+                    row += `<td class="py-4 px-6 bg-gray-50 dark:bg-gray-800">${subgraph.status}</td>`
+
+                    if (subgraph.progress === null) {
+                        row += `<td class="py-4 px-6 bg-gray-50 dark:bg-gray-800">NA</td>`
+                    } else {
+                        row += `<td class="py-4 px-6 bg-gray-50 dark:bg-gray-800">${subgraph.progress}</td>`
+                    }
+
+                    if (subgraph.tokens === null) {
+                        row += `<td class="py-4 px-6 bg-gray-50 dark:bg-gray-800">NA</td>`
+                    } else {
+                        row += `<td class="py-4 px-6 bg-gray-50 dark:bg-gray-800">${subgraph.tokens}</td>`
+                    }
+                    row += "</tr>"
+                    $("#subgraphs-body").append(row)
+                })
+            })
+            setTimeout(getSubgraphs, 2000)
+        }
+
+        $("#reloadSubgraphsBt").on("click", function () {
+            getSubgraphs()
+        })
     });
 </script>
 </body>

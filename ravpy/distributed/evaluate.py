@@ -18,12 +18,18 @@ client = g.client
 @g.client.on('subgraph', namespace="/client")
 def compute_subgraph(d):
     global client, timeoutId
-
+    g.logger.debug("")
+    g.logger.debug("Subgraph received!")
+    g.logger.debug("Graph id: {}, subgraph id: {}".format(d['graph_id'], d["subgraph_id"]))
     os.system('clear')
     # print("Received Subgraph : ",d["subgraph_id"]," of Graph : ",d["graph_id"])
     print(AsciiTable([['Provider Dashboard']]).table)
     g.dashboard_data.append([d["subgraph_id"], d["graph_id"], "Computing"])
     print(AsciiTable(g.dashboard_data).table)
+
+    # create a subgraph row in database
+    subgraph_obj = g.ravdb.add_subgraph(graph_id=d["graph_id"], subgraph_id=d["subgraph_id"], status="Computing")
+    g.ravdb.update_subgraph(subgraph=subgraph_obj, status="Computing")
 
     g.has_subgraph = True
     subgraph_id = d["subgraph_id"]
@@ -46,6 +52,13 @@ def compute_subgraph(d):
             g.dashboard_data[-1][2] = "Failed"
             print(AsciiTable([['Provider Dashboard']]).table)
             print(AsciiTable(g.dashboard_data).table)
+
+            # update subgraph
+            g.ravdb.update_subgraph(subgraph=subgraph_obj,
+                                    status="Failed")
+
+            g.logger.debug("Error: {}".format(str(error)))
+
             g.has_subgraph = False
             stopTimer(timeoutId)
             timeoutId = setTimeout(waitInterval, opTimeout)
@@ -57,10 +70,9 @@ def compute_subgraph(d):
             g.delete_files_list = []
             g.outputs = {}
 
-            print('Error: ', error)
             emit_error(data[0], error, subgraph_id, graph_id)
             if 'broken pipe' in str(error).lower() or '421' in str(error).lower():
-                print(
+                g.logger.debug(
                     '\n\nYou have encountered an IO based Broken Pipe Error. \nRestart terminal and try connecting again')
                 sys.exit()
 
@@ -72,16 +84,20 @@ def compute_subgraph(d):
             os.remove(download_path)
             g.ftp_client.delete_file(server_file_path)
 
-    for index in data:
+    for index, op_obj in enumerate(data):
 
         # Perform
-        operation_type = index["op_type"]
-        operator = index["operator"]
+        operation_type = op_obj["op_type"]
+        operator = op_obj["operator"]
         if operation_type is not None and operator is not None:
-            result_payload = compute_locally(index, subgraph_id, graph_id)
+            result_payload = compute_locally(op_obj, subgraph_id, graph_id)
 
             if not g.error:
                 results.append(result_payload)
+
+                # update subgraph
+                g.ravdb.update_subgraph(subgraph=subgraph_obj,
+                                        progress=((index+1)/len(data))*100)
             else:
                 break
 
@@ -102,6 +118,12 @@ def compute_subgraph(d):
         g.dashboard_data[-1][2] = "Computed"
         print(AsciiTable([['Provider Dashboard']]).table)
         print(AsciiTable(g.dashboard_data).table)
+
+        # update subgraph
+        g.ravdb.update_subgraph(subgraph=subgraph_obj,
+                                status="Computed")
+
+        g.logger.debug("Subgraph computed successfully")
 
     g.has_subgraph = False
 

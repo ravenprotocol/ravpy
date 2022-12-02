@@ -1,35 +1,42 @@
 import socketio
 from socketio.exceptions import ConnectionError
 from ravpy.config import RAVENVERSE_URL, TYPE, RAVENVERSE_FTP_URL
-from ravpy.globals import g
 
 
 class SocketNamespace(socketio.ClientNamespace):
+    def __init__(self, namespace, logger):
+        super().__init__(namespace)
+        self.logger = logger
+
     def on_connect(self):
-        g.logger.debug('Connected to Ravenverse successfully!')
+        self.logger.debug('Connected to Ravenverse successfully!')
 
     def on_disconnect(self):
-        g.logger.debug('Disconnected from the server')
+        self.logger.debug('Disconnected from the server')
 
     def on_message(self, data):
-        g.logger.debug('Message received:', data)
+        self.logger.debug('Message received:', data)
 
     def on_result(self, data):
-        g.logger.debug(data)
+        self.logger.debug(data)
 
     def on_connect_error(self, e):
-        g.logger.debug("Error:{}".format(str(e)))
+        self.logger.debug("Error:{}".format(str(e)))
 
 
 class SocketClient(object):
-    def __init__(self):
+    def __init__(self, logger):
         self._client = socketio.Client(logger=False, request_timeout=100, engineio_logger=False)
-        self._client.register_namespace(SocketNamespace('/client'))
+        self._client.register_namespace(SocketNamespace('/client', logger))
+        self.logger = logger
+
+    def set_logger(self, logger):
+        self.logger = logger
 
     def connect(self, token):
-        g.logger.debug("Connecting to Ravenverse...")
-        g.logger.debug("Ravenverse url: {}?type={}".format(RAVENVERSE_URL, TYPE))
-        g.logger.debug("Ravenverse FTP host: {}".format(RAVENVERSE_FTP_URL))
+        self.logger.debug("Connecting to Ravenverse...")
+        self.logger.debug("Ravenverse url: {}?type={}".format(RAVENVERSE_URL, TYPE))
+        self.logger.debug("Ravenverse FTP host: {}".format(RAVENVERSE_FTP_URL))
         auth_headers = {"token": token}
 
         try:
@@ -38,11 +45,11 @@ class SocketClient(object):
                                  transports=['websocket'],
                                  namespaces=['/client'], wait_timeout=100)
         except ConnectionError as e:
-            g.logger.error("Error: Unable to connect to Ravenverse. "
+            self.logger.error("Error: Unable to connect to Ravenverse. "
                            "Make sure you are using the right hostname and port. \n{}".format(e))
             self._client.disconnect()
         except Exception as e:
-            g.logger.error("Error: Unable to connect to Ravenverse. "
+            self.logger.error("Error: Unable to connect to Ravenverse. "
                            "Make sure you are using the right hostname and port. \n{}".format(e))
             self._client.disconnect()
 

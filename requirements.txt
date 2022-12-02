@@ -9,8 +9,13 @@ scipy
 speedtest-cli
 terminaltables==3.1.10
 websocket-client
-pyinstaller
 scikit-learn
 eel
 psutil
 hurry.filesize
+sqlalchemy
+sqlalchemy-utils
+pillow
+tinyaes
+pyinstaller[encryption]
+dmgbuild

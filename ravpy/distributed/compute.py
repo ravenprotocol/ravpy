@@ -401,11 +401,10 @@ def upload_result(payload, result, subgraph_id=None, graph_id=None):
 
 
 def emit_error(payload, error, subgraph_id, graph_id):
-    print("Emit Error")
     g.error = True
     error = str(error)
     client = g.client
-    print(error, payload)
+    print("Emmit error:{}".format(str(error)))
     client.emit("op_completed", json.dumps({
         'op_type': payload["op_type"],
         'error': error,
