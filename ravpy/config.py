@@ -18,8 +18,8 @@ TYPE = "client"
 
 ENCRYPTION = False
 
-FTP_TEMP_FILES_FOLDER = os.path.join(os.getcwd(), "ravpy/distributed/temp_files")
-FTP_DOWNLOAD_FILES_FOLDER = os.path.join(os.getcwd(), "ravpy/distributed/downloads")
+FTP_TEMP_FILES_FOLDER = os.path.join(PROJECT_DIR, "ravpy/distributed/temp_files")
+FTP_DOWNLOAD_FILES_FOLDER = os.path.join(PROJECT_DIR, "ravpy/distributed/downloads")
 
 os.makedirs(FTP_TEMP_FILES_FOLDER, exist_ok=True)
 os.makedirs(FTP_DOWNLOAD_FILES_FOLDER, exist_ok=True)
