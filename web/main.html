@@ -1,0 +1,387 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>
+        Ravpy
+    </title>
+    <script type="text/javascript" src="/eel.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/flowbite@1.5.3/dist/flowbite.min.css"/>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#231348',
+                        azure: '#f0efff',
+                        bunting: {
+                            DEFAULT: '#111839',
+                            500: '#1d2754',
+                        },
+                        blackRussian: '#0c0f2f',
+                        darkBlueMagenta: '#1c1662',
+                        mediumDarkCyanBlue: '#0065b0',
+                        rhino: '#2e325e',
+                        tolopea: '#1f1139',
+                        slateGray: '#7b6b99',
+                        pastelBlue: '#b3c2ce',
+                        americanBlue: '#43466e',
+                        blueBell: '#a3a6cc',
+                        selfGreen: '#008a52',
+                        selfYellow: '#e2c110',
+                        alizarin: '#e74c3c',
+                        pumpkin: '#d35400'
+                    },
+                    fontFamily: {
+                        rubik: ['"Rubik"', 'serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Rubik', sans-serif;
+        }
+
+        body {
+            background-color: #0c0f2f;
+        }
+    </style>
+</head>
+<body>
+<div>
+    <nav class="px-2 sm:px-4 py-2.5 border-b border-azure">
+        <div class="container flex flex-wrap justify-between items-center mx-auto px-4 py-1">
+            <h1 class="flex items-center">
+                <span class="self-center text-2xl font-semibold whitespace-nowrap text-white">Ravpy</span>
+            </h1>
+
+            <div class="hidden w-full md:block md:w-auto" id="navbar-default">
+                <button class="hidden flex justify-start items-center py-2 px-4 text-white text-sm cursor-pointer rounded-lg align-middle border border-rhino"
+                        id="disconnectButton">
+                    <span class='text-sm'>
+                        Disconnect
+                    </span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="px-2 sm:px-4 py-2.5">
+        <div class="container mx-auto px-4 py-1 hidden" id="access_token_container">
+            <div class="w-1/2 mx-auto">
+                <div class="max-w-6xl mx-auto">
+                    <h2 class="font-rubik font-light leading-tight text-4xl mt-0 mb-2 text-white mt-10 text-l">
+                        Ravenverse Provider</h2>
+                </div>
+                <div class="text-2xl text-white mt-10 mb-4">Enter access token</div>
+
+                <form>
+                    <label for="access_token"
+                           class="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-gray-300">Access
+                        Token</label>
+                    <div class="relative">
+                        <input type="text" id="access_token"
+                               class="block p-4 pl-4 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                               placeholder="Enter access token" required>
+                    </div>
+
+                    <div class="mt-4 flex justify-end">
+                        <button class="flex justify-start items-center bg-gradient-to-r from-mediumDarkCyanBlue to-darkBlueMagenta py-2 px-4 md:py-3 md:px-6 lg:py-3 lg:px-6 text-white text-sm cursor-pointer rounded-lg align-middle my-4 lg:my-0 md:my-0"
+                                id="enterButton">
+                            <span class='text-sm mr-4 md:text-base lg:text-base'>
+                                Connect
+                            </span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="container mx-auto px-4 py-1 hidden" id="dashboard_container">
+            <div class="max-w-6xl mx-auto">
+                <h2 class="font-rubik font-light leading-tight text-3xl mb-10 text-white mt-10 text-l">
+                    Welcome, <span class="font-bold">Ravenverse Provider!</span></h2>
+
+                <div class="relative m-2 md:max-w-6xl md:mx-auto lg:max-w-6xl lg:mx-auto mt-2 md:mt-4
+                            lg:mt-4 bg-bunting p-2 md:p-4 lg:p-4 text-white rounded-xl">
+                    <h1 class="text-xl font-medium">Systen configuration</h1>
+
+                    <div class="grid grid-cols-3 gap-4">
+                        <div>
+                            <h3 class="text-white text-lg font-medium mt-4">RAM</h3>
+                            <div id="ramConfig"></div>
+                        </div>
+                        <div>
+                            <h3 class="text-white text-lg font-medium mt-4">CPU</h3>
+                            <div id="cpuConfig"></div>
+                        </div>
+                        <div>
+                            <h3 class="text-white text-lg font-medium mt-4">Storage</h3>
+                            <div id="storageConfig"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center bg-bunting rounded p-4 my-4 text-white">
+                    <h1 class="text-xl font-medium" id="participateTitle">Participate</h1>
+                    <div class="flex justify-start items-center mt-8 mb-8 gap-4">
+                        <button class="bg-gradient-to-r from-mediumDarkCyanBlue to-darkBlueMagenta py-2 px-4 text-white text-center text-sm cursor-pointer rounded-lg align-middle"
+                                id="participateButton">
+                            <span class='text-sm md:text-base lg:text-base'>
+                                Start
+                            </span>
+                        </button>
+
+                        <button class="bg-gradient-to-r from-pumpkin to-alizarin py-2 px-4 text-white text-sm cursor-pointer rounded-lg align-middle hidden"
+                                id="stopParticipation">
+                            <span class='text-sm md:text-base lg:text-base'>
+                                Stop
+                            </span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-bunting p-4">
+                    <div>
+                        <div class="flex justify-between items-center">
+                            <h1 class="text-xl font-medium text-white">Graphs received</h1>
+                            <img src="img/reload.svg" class="h-6 mr-2 cursor-pointer" alt="reload"
+                                 id="reloadSubgraphsBt"/>
+                        </div>
+
+                        <div class="overflow-x-auto overflow-y-auto h-72 relative shadow-md sm:rounded-lg mt-4 bg-gray-50">
+                            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                                <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
+                                <tr>
+                                    <th scope="col" class="py-3 px-6 bg-gray-100 dark:bg-gray-800">
+                                        Graph id
+                                    </th>
+                                    <th scope="col" class="py-3 px-6 bg-gray-100 dark:bg-gray-800">
+                                        Subgraph id
+                                    </th>
+                                    <th scope="col" class="py-3 px-6 bg-gray-100 dark:bg-gray-800">
+                                        Status
+                                    </th>
+                                    <th scope="col" class="py-3 px-6 bg-gray-100 dark:bg-gray-800">
+                                        Progress(%)
+                                    </th>
+                                    <th scope="col" class="py-3 px-6 bg-gray-100 dark:bg-gray-800">
+                                        Reward(Tokens)
+                                    </th>
+                                </tr>
+                                </thead>
+                                <tbody id="subgraphs-body">
+                                <!--                                    <tr class="border-b border-gray-200 dark:border-gray-700">-->
+                                <!--                                        <th scope="row"-->
+                                <!--                                            class="py-4 px-6 font-medium text-gray-900 whitespace-nowrap bg-gray-50 dark:text-white dark:bg-gray-800">-->
+                                <!--                                            1-->
+                                <!--                                        </th>-->
+                                <!--                                        <td class="py-4 px-6 bg-gray-50 dark:bg-gray-800">-->
+                                <!--                                            1-->
+                                <!--                                        </td>-->
+                                <!--                                        <td class="py-4 px-6 bg-gray-50 dark:bg-gray-800">-->
+                                <!--                                            Computing-->
+                                <!--                                        </td>-->
+                                <!--                                        <td class="py-4 px-6 bg-gray-50 dark:bg-gray-800">-->
+                                <!--                                            10%-->
+                                <!--                                        </td>-->
+                                <!--                                        <td class="py-4 px-6 bg-gray-50 dark:bg-gray-800">-->
+                                <!--                                            1000-->
+                                <!--                                        </td>-->
+                                <!--                                    </tr>-->
+                                </tbody>
+                            </table>
+
+<!--                            <div class="flex items-center justify-center space-x-2 animate-pulse absolute top-1/2 left-1/2 hidden" id="spinner2">-->
+<!--                                <div class="w-12 h-12 bg-gradient-to-r from-blackRussian to-bunting rounded-full mt-10">-->
+<!--                                </div>-->
+<!--                            </div>-->
+                        </div>
+                    </div>
+
+                </div>
+<div class="bg-bunting p-4 mt-4">
+                    <div>
+                        <h1 class="text-xl font-medium text-white">Logs</h1>
+                        <div id="logsContainer"
+                             class="bg-white w-full h-96 rounded p-4 mt-4 overflow-y-scroll">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+<script src="https://unpkg.com/flowbite@1.5.3/dist/flowbite.js"></script>
+<script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    $(document).ready(function () {
+        eel.verify_access_token(localStorage.getItem("access_token"))().then((result) => {
+            let status = result[1]
+            if (status === "success") {
+                $("#access_token_container").hide()
+                $("#dashboard_container").show()
+                $("#disconnectButton").show()
+                getSystemConfig()
+                getSubgraphs()
+            } else if (status === "failure") {
+                $("#access_token_container").show()
+                $("#dashboard_container").hide()
+                $("#disconnectButton").hide()
+            }
+        })
+
+        // disconnect
+        $("#disconnectButton").on("click", function () {
+            localStorage.removeItem("access_token")
+            window.location.reload()
+            eel.delete_subgraphs()
+        })
+
+        $("#enterButton").on("click", function () {
+            let access_token = $("#access_token").val();
+            if (access_token === "" || access_token === undefined) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Enter access token to continue',
+                    icon: 'error',
+                    confirmButtonText: 'Ok'
+                })
+                return false
+            }
+            let output = eel.verify_access_token(access_token)()
+            output.then((result) => {
+                let status = result[1]
+                let message = result[2]
+                if (status === "success") {
+                    $("#access_token_container").hide()
+                    $("#dashboard_container").show()
+                    $("#disconnectButton").show()
+                    localStorage.setItem("access_token", access_token)
+                    getSystemConfig()
+                    getSubgraphs()
+                    $("#subgraphs-body").empty()
+                    $("#logsContainer").empty()
+                } else if (status === "failure") {
+                    console.log(message)
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'Invalid access token!',
+                        icon: 'error',
+                        confirmButtonText: 'Ok'
+                    })
+                }
+            })
+            return false
+        })
+
+        function getSystemConfig() {
+            eel.get_system_config()().then((result) => {
+                console.log(result)
+                $("#ramConfig").html("<span class='text-slate-300'>Total:</span> <span class='underline'>" + result.ram_total + "</span><br/><span class='text-slate-300'>Available:</span> <span class='underline'>" + result.ram_available + "</span>")
+                $("#cpuConfig").html("<span class='text-slate-300'>Total:</span> <span class='underline'>" + result.cpu_count + "</span><br/><span class='text-slate-300'>Available(%):</span> <span class='underline'>" + result.cpu_percent + "</span>")
+                $("#storageConfig").html("<span class='text-slate-300'>Total:</span> <span class='underline'>" + result.storage_total + "</span><br/><span class='text-slate-300'>Available:</span> <span class='underline'>" + result.storage_available + "</span>")
+            })
+
+            setTimeout(getSystemConfig, 10000)
+        }
+
+        // Three steps
+        // 1. initialize
+        // 2. participate
+
+        $("#participateButton").on("click", function () {
+            $("#participateButton span").text("Starting...")
+            eel.participate(localStorage.getItem("access_token"))().then((initialized) => {
+                if (initialized) {
+                    $("#participateButton span").text("Start")
+                    clientConnected()
+                }else{
+                    $("#participateButton span").text("Start")
+                    clientDisconnected()
+                }
+            })
+        })
+
+        $("#stopParticipation").on("click", function () {
+            eel.disconnect()().then((result) => {
+                clientDisconnected()
+            })
+        })
+
+        eel.expose(getLog)
+
+        function getLog(log) {
+            console.log(log.message, log.message.length)
+            let log_ = ""
+            if (log.message.length === 0) {
+                log_ = "<div class='mt-3 h-4'>&nbsp;</div>"
+            } else {
+                log_ = "<div class='mt-3'>" + log.message + "&nbsp;&nbsp;&nbsp;&nbsp;<span class='text-slate-400'>[" + log.levelname + "] " + log.asctime + "</span></div>"
+            }
+
+            $("#logsContainer").append(log_)
+            $('#logsContainer').scrollTop($('#logsContainer')[0].scrollHeight);
+        }
+
+        eel.expose(clientDisconnected)
+
+        function clientDisconnected() {
+            $("#participateTitle").text("Participate")
+            $("#participateButton").show()
+            $("#stopParticipation").hide()
+        }
+
+        eel.expose(clientConnected)
+
+        function clientConnected() {
+            $("#participateTitle").text("Participating...")
+            $("#participateButton").hide()
+            $("#stopParticipation").show()
+        }
+
+        function getSubgraphs() {
+            eel.get_subgraphs()().then((subgraphs) => {
+                console.log("subgraphs", subgraphs)
+                $("#subgraphs-body").empty()
+                subgraphs.forEach((subgraph) => {
+                    let row = "<tr>"
+                    row += `<td class="py-4 px-6 bg-gray-50 dark:bg-gray-800">${subgraph.graph_id}</td>`
+                    row += `<td class="py-4 px-6 bg-gray-50 dark:bg-gray-800">${subgraph.subgraph_id}</td>`
+                    row += `<td class="py-4 px-6 bg-gray-50 dark:bg-gray-800">${subgraph.status}</td>`
+
+                    if (subgraph.progress === null) {
+                        row += `<td class="py-4 px-6 bg-gray-50 dark:bg-gray-800">NA</td>`
+                    } else {
+                        row += `<td class="py-4 px-6 bg-gray-50 dark:bg-gray-800">${subgraph.progress}</td>`
+                    }
+
+                    if (subgraph.tokens === null) {
+                        row += `<td class="py-4 px-6 bg-gray-50 dark:bg-gray-800">NA</td>`
+                    } else {
+                        row += `<td class="py-4 px-6 bg-gray-50 dark:bg-gray-800">${subgraph.tokens}</td>`
+                    }
+                    row += "</tr>"
+                    $("#subgraphs-body").append(row)
+                })
+            })
+            setTimeout(getSubgraphs, 2000)
+        }
+
+        $("#reloadSubgraphsBt").on("click", function () {
+            getSubgraphs()
+        })
+    });
+</script>
+</body>
+</html>

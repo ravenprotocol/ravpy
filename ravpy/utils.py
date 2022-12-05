@@ -102,6 +102,7 @@ def get_ftp_credentials():
     else:
         g.logger.debug("Unable to fetch ftp credentials. Try again after some time or "
                        "contact our team at team@ravenprotocol.com")
+        g.logger.debug(r.text)
         return None
 
 
@@ -289,3 +290,13 @@ def verify_token(token):
         return False
     else:
         return True
+
+
+def disconnect():
+    if g.client.connected:
+        g.logger.debug("Disconnecting...")
+        if g.client.connected:
+            g.client.emit("disconnect", namespace="/client")
+            g.logger.debug("Disconnected")
+
+    return True

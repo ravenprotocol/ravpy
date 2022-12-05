@@ -2,6 +2,7 @@ import os
 import socketio
 
 from .config import RAVENVERSE_URL, TYPE, RAVENVERSE_FTP_URL
+from .db import DBManager
 from .logger import get_logger
 from .singleton_utils import Singleton
 
@@ -17,12 +18,6 @@ def get_client(ravenverse_token):
     auth_headers = {"token": ravenverse_token}
     client = socketio.Client(logger=False, request_timeout=100, engineio_logger=False)
 
-    @client.on('error', namespace='/client')
-    def check_error(d):
-        g.logger.error("Connection error:a{}".format(d))
-        client.disconnect()
-        os._exit(1)
-
     try:
         g.logger.debug("Ravenverse url: {}?type={}".format(RAVENVERSE_URL, TYPE))
         g.logger.debug("Ravenverse FTP host: {}".format(RAVENVERSE_FTP_URL))
@@ -30,7 +25,6 @@ def get_client(ravenverse_token):
                        auth=auth_headers,
                        transports=['websocket'],
                        namespaces=['/client'], wait_timeout=100)
-        g.logger.debug("Successfully connected to Ravenverse")
         return client
     except Exception as e:
         g.logger.error("Error: Unable to connect to Ravenverse. "
@@ -45,8 +39,8 @@ class Globals(object):
         self._client = None
         self._timeoutId = None
         self._ops = {}
-        self._opTimeout = 300 #5000
-        self._initialTimeout = 100
+        self._opTimeout = 5000
+        self._initialTimeout = 5000
         self._outputs = {}
         self._ftp_client = None
         self._delete_files_list = []
@@ -61,6 +55,9 @@ class Globals(object):
         self._ravenverse_token = None
         self._logger = get_logger()
         self._dashboard_data = [['Subgraph ID', 'Graph ID', 'Status']]
+        self._ravdb = DBManager()
+        self._ravdb.logger = self._logger
+        self._socket_client = self.get_socket_client()
 
     @property
     def timeoutId(self):
@@ -104,12 +101,17 @@ class Globals(object):
 
     @property
     def client(self):
-        if self._client is not None:
-            return self._client
+        return self._client
 
-        if self._client is None:
-            self._client = get_client(self._ravenverse_token)
-            return self._client
+    def get_socket_client(self):
+        from .socket import SocketClient
+        self._socket_client = SocketClient(self.logger)
+        self._client = self._socket_client.client
+        return self._socket_client
+
+    def connect_socket_client(self):
+        self._socket_client.connect(self._ravenverse_token)
+        self._client = self._socket_client.client
 
     @property
     def ftp_client(self):
@@ -198,6 +200,10 @@ class Globals(object):
     @dashboard_data.setter
     def dashboard_data(self, dashboard_data):
         self._dashboard_data = dashboard_data
+
+    @property
+    def ravdb(self):
+        return self._ravdb
 
 
 g = Globals.Instance()

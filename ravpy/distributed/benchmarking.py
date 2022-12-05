@@ -36,7 +36,7 @@ def benchmark():
         if file.endswith(".zip"):
             os.remove(file)
 
-    g.logger.debug("Benchmarking completed successfully, emitting results...")
+    g.logger.debug("Benchmarking completed successfully!")
     g.logger.debug("Emitting Benchmark Results...")
     client.emit("benchmark_callback", data=json.dumps(benchmark_results), namespace="/client")
     client.sleep(1)

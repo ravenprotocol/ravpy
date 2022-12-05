@@ -4,9 +4,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from ravpy.distributed.participate import participate
-from ravpy.initialize import initialize
+from ravpy import participate
+from ravpy import initialize
 
 if __name__ == '__main__':
     client = initialize(os.environ.get("TOKEN"))
+    if not client.connected:
+        os._exit(1)
+
     participate()
