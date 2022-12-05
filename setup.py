@@ -7,7 +7,7 @@ long_description = (this_directory / "README.md").read_text()
 
 setup(
     name="ravpy",
-    version="0.11",
+    version="0.12",
     license='MIT',
     author="Raven Protocol",
     author_email='kailash@ravenprotocol.com',
@@ -34,6 +34,6 @@ setup(
         "sqlalchemy",
         "sqlalchemy-utils",
     ],
-    app=["ui2.py"],
+    app=["gui.py"],
     setup_requires=["py2app"],
 )
