@@ -17,11 +17,11 @@ atexit.register(exit_handler)
 
 
 def initialize(ravenverse_token):
-    g.logger.debug("Checking Version of Ravpy...")
-
-    if not isLatestVersion('ravpy'):
-        g.logger.debug("Please update ravpy to latest version...")
-        os._exit(1)
+    # g.logger.debug("Checking Version of Ravpy...")
+    #
+    # if not isLatestVersion('ravpy'):
+    #     g.logger.debug("Please update ravpy to latest version...")
+    #     os._exit(1)
 
     g.logger.debug("Initializing...")
     g.ravenverse_token = ravenverse_token

@@ -13,7 +13,7 @@ os.makedirs(PARAMS_DIR, exist_ok=True)
 RAVENVERSE_URL = os.environ.get("RAVENVERSE_URL")
 RAVENVERSE_FTP_URL = os.environ.get("RAVENVERSE_FTP_URL")
 
-BENCHMARK_FILE_NAME = "ravpy/distributed/benchmark.json"
+BENCHMARK_FILE_NAME = os.path.join(PROJECT_DIR, "ravpy/distributed/benchmark.json")
 TYPE = "client"
 
 ENCRYPTION = False
@@ -24,7 +24,7 @@ FTP_DOWNLOAD_FILES_FOLDER = os.path.join(PROJECT_DIR, "ravpy/distributed/downloa
 os.makedirs(FTP_TEMP_FILES_FOLDER, exist_ok=True)
 os.makedirs(FTP_DOWNLOAD_FILES_FOLDER, exist_ok=True)
 
-RAVPY_LOG_FILE = os.path.join(pathlib.Path(__file__).parent.parent.resolve(), "debug.log")
+RAVPY_LOG_FILE = os.path.join(PROJECT_DIR, "debug.log")
 
 BENCHMARK_DOWNLOAD_PATH = os.path.join(PROJECT_DIR, "ravpy/distributed/downloads/")
 TEMP_FILES_PATH = os.path.join(PROJECT_DIR, "ravpy/distributed/temp_files/")
