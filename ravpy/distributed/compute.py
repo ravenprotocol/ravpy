@@ -1,41 +1,40 @@
+import ast
+import json
 import os
 import sys
-import numpy as np
-import json
 import time
-import ast
 
-from ..globals import g
-from ..utils import get_key, dump_data, load_data
-from ..ftp import check_credentials as check_credentials
 from ..config import FTP_DOWNLOAD_FILES_FOLDER
+from ..globals import g
 from ..strings import functions
-
+from ..utils import get_key, dump_data, load_data
 from .op_functions import *
+
 
 def compute_locally_bm(*args, **kwargs):
     operator = kwargs.get("operator", None)
     op_type = kwargs.get("op_type", None)
-    param_args =kwargs.get("params",None)
+    param_args = kwargs.get("params", None)
     # print("Operator", operator,"Op Type:",op_type)
     if op_type == "unary":
         value1 = args[0]
-        params={}
-        t1=time.time()
-        bm_result = get_unary_result(value1['value'], params, operator)            
-        t2=time.time()
-        return t2-t1
+        params = {}
+        t1 = time.time()
+        bm_result = get_unary_result(value1['value'], params, operator)
+        t2 = time.time()
+        return t2 - t1
 
     elif op_type == "binary":
         value1 = args[0]['value']
         value2 = args[1]['value']
         params = {}
-        t1=time.time()
+        t1 = time.time()
         bm_result = get_binary_result(value1, value2, params, operator)
-        t2=time.time()
-        return t2-t1
+        t2 = time.time()
+        return t2 - t1
 
-# async 
+
+# async
 def compute_locally(payload, subgraph_id, graph_id):
     try:
         # print("Computing ",payload["operator"])
@@ -43,14 +42,14 @@ def compute_locally(payload, subgraph_id, graph_id):
 
         values = []
 
-
         for i in range(len(payload["values"])):
             if "value" in payload["values"][i].keys():
                 if "path" not in payload["values"][i].keys():
                     values.append(payload["values"][i]["value"])
 
                 else:
-                    download_path = os.path.join(FTP_DOWNLOAD_FILES_FOLDER,os.path.basename(payload["values"][i]["path"]))
+                    download_path = os.path.join(FTP_DOWNLOAD_FILES_FOLDER,
+                                                 os.path.basename(payload["values"][i]["path"]))
                     value = load_data(download_path).tolist()
                     values.append(value)
 
@@ -63,26 +62,32 @@ def compute_locally(payload, subgraph_id, graph_id):
 
         op_type = payload["op_type"]
         operator = get_key(payload["operator"], functions)
-        params=payload['params']
+        params = payload['params']
 
         for i in params.keys():
             if type(params[i]) == str:
                 temp = ast.literal_eval(params[i])
                 if type(temp) == dict:
                     params[i] = temp
-            elif type(params[i]) == dict and 'op_id' in params[i].keys():
-                op_id = params[i]["op_id"]
-                param_value = g.outputs[op_id]
+            elif type(params[i]) == dict:
+                if 'op_id' in params[i].keys():
+                    op_id = params[i]["op_id"]
+                    param_value = g.outputs[op_id]
+                elif 'value' in params[i].keys():
+                    download_path = os.path.join(FTP_DOWNLOAD_FILES_FOLDER,
+                                                    os.path.basename(params[i]["path"]))
+                    param_value = load_data(download_path).tolist()
+                
                 params[i] = param_value
-        
+
         if op_type == "unary":
             result = get_unary_result(payload["values"][0], params, operator)
         elif op_type == "binary":
             result = get_binary_result(payload["values"][0], payload["values"][1], params, operator)
 
-
         if 'sklearn' in str(type(result)):
-            file_path = upload_result(payload, result, subgraph_id=subgraph_id, graph_id=graph_id) #upload_result(payload, result)
+            file_path = upload_result(payload, result, subgraph_id=subgraph_id,
+                                      graph_id=graph_id)  # upload_result(payload, result)
             return json.dumps({
                 'op_type': payload["op_type"],
                 'file_name': os.path.basename(file_path),
@@ -92,7 +97,8 @@ def compute_locally(payload, subgraph_id, graph_id):
             })
 
         if 'dict' in str(type(result)):
-            file_path = upload_result(payload, result, subgraph_id=subgraph_id, graph_id=graph_id) #upload_result(payload, result)
+            file_path = upload_result(payload, result, subgraph_id=subgraph_id,
+                                      graph_id=graph_id)  # upload_result(payload, result)
             g.outputs[payload["op_id"]] = result
 
             return json.dumps({
@@ -103,13 +109,12 @@ def compute_locally(payload, subgraph_id, graph_id):
                 "status": "success"
             })
 
-
         if not isinstance(result, np.ndarray):
             result = np.array(result)
 
         result_byte_size = result.size * result.itemsize
 
-        if result_byte_size < (30 * 1000000)//10000:
+        if result_byte_size < (30 * 1000000) // 10000:
             try:
                 result = result.tolist()
             except:
@@ -118,16 +123,17 @@ def compute_locally(payload, subgraph_id, graph_id):
             g.outputs[payload["op_id"]] = result
 
             return json.dumps({
-            'op_type': payload["op_type"],
-            'result': result,
-            'operator': payload["operator"],
-            "op_id": payload["op_id"],
-            "status": "success"
+                'op_type': payload["op_type"],
+                'result': result,
+                'operator': payload["operator"],
+                "op_id": payload["op_id"],
+                "status": "success"
             })
 
         else:
 
-            file_path = upload_result(payload, result, subgraph_id=subgraph_id, graph_id=graph_id) #upload_result(payload, result)
+            file_path = upload_result(payload, result, subgraph_id=subgraph_id,
+                                      graph_id=graph_id)  # upload_result(payload, result)
             g.outputs[payload["op_id"]] = result.tolist()
 
             return json.dumps({
@@ -239,7 +245,7 @@ def get_unary_result(value1, params, operator):
         result = cnn_index_2(value1, params=params)
     elif operator == 'size':
         result = size(value1, params=params)
-    
+
     # Machine Learning Algorithms
     elif operator == 'kmeans':
         result = kmeans(value1, params=params)
@@ -275,6 +281,7 @@ def get_unary_result(value1, params, operator):
         result = backward_pass_flatten(value1, params=params)
 
     return result
+
 
 def get_binary_result(value1, value2, params, operator):
     if operator == "add":
@@ -317,7 +324,7 @@ def get_binary_result(value1, value2, params, operator):
         result = np_random_uniform(value1, value2, params=params)
     elif operator == "arange":
         result = np_arange(value1, value2, params=params)
-            
+
 
     elif operator == 'gather':
         result = gather(value1, value2, params=params)
@@ -329,7 +336,7 @@ def get_binary_result(value1, value2, params, operator):
         result = one_hot_encoding(value1, value2, params=params)
     elif operator == 'find_indices':
         result = find_indices(value1, value2, params=params)
-    elif operator == 'concatenate':
+    elif operator == 'concat':
         result = concatenate(value1, value2, params=params)
     elif operator == 'join_to_list':
         result = join_to_list(value1, value2, params=params)
@@ -339,9 +346,9 @@ def get_binary_result(value1, value2, params, operator):
         result = cnn_add_at(value1, value2, params=params)
     elif operator == 'set_value':
         result = set_value(value1, value2, params=params)
-    
-    
-    
+
+
+
     # Machine Learning Algorithms
     elif operator == "linear_regression":
         result = linear_regression(value1, value2, params=params)
@@ -365,7 +372,7 @@ def get_binary_result(value1, value2, params, operator):
         result = random_forest_classifier(value1, value2, params=params)
     elif operator == "random_forest_regressor":
         result = random_forest_regressor(value1, value2, params=params)
-    
+
 
     # Losses
     elif operator == 'square_loss':
@@ -381,36 +388,37 @@ def get_binary_result(value1, value2, params, operator):
 
     return result
 
+
 def upload_result(payload, result, subgraph_id=None, graph_id=None):
     try:
         result = result.tolist()
     except:
-        result=result
+        result = result
 
-    file_path = dump_data(payload['op_id'],result)
+    file_path = dump_data(payload['op_id'], result)
 
     from zipfile import ZipFile
     with ZipFile('local_{}_{}.zip'.format(subgraph_id, graph_id), 'a') as zipObj2:
-        zipObj2.write(file_path, os.path.basename(file_path))    
-    
+        zipObj2.write(file_path, os.path.basename(file_path))
+
     os.remove(file_path)
 
     return file_path
-    
+
+
 def emit_error(payload, error, subgraph_id, graph_id):
-    print("Emit Error")
     g.error = True
-    error=str(error)
+    error = str(error)
     client = g.client
-    print(error,payload)
+    print("Emmit error:{}".format(str(error)))
     client.emit("op_completed", json.dumps({
-            'op_type': payload["op_type"],
-            'error': error,
-            'operator': payload["operator"],
-            "op_id": payload["op_id"],
-            "status": "failure",
-            "subgraph_id": subgraph_id,
-            "graph_id": graph_id
+        'op_type': payload["op_type"],
+        'error': error,
+        'operator': payload["operator"],
+        "op_id": payload["op_id"],
+        "status": "failure",
+        "subgraph_id": subgraph_id,
+        "graph_id": graph_id
     }), namespace="/client")
 
     try:

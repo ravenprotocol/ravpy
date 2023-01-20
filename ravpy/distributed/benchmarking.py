@@ -1,68 +1,19 @@
-import os
-import ast
 import json
+import os
 import time
-
-import speedtest
-from ..strings import functions
 
 from .compute import compute_locally_bm
 from .evaluate import waitInterval
-from ..config import RAVENVERSE_URL, BENCHMARK_FILE_NAME, RAVENVERSE_FTP_URL
-from ..ftp import check_credentials
-from ..ftp import get_client as get_ftp_client
+from ..config import RAVENVERSE_URL, BENCHMARK_FILE_NAME
 from ..globals import g
-from ..utils import download_file, get_key, setTimeout, get_ftp_credentials
-
-
-def initialize():
-    credentials = get_ftp_credentials()
-
-    if credentials is None:
-        g.logger.debug("Unable to fetch credentials")
-        return
-
-    creds = ast.literal_eval(credentials['ftp_credentials'])
-    time.sleep(2)
-
-    try:
-        if RAVENVERSE_FTP_URL != 'localhost' and RAVENVERSE_FTP_URL != '0.0.0.0':
-            wifi = speedtest.Speedtest()
-            upload_speed = int(wifi.upload())
-            download_speed = int(wifi.download())
-            upload_speed = upload_speed / 8
-            download_speed = download_speed / 8
-            if upload_speed <= 3000000:
-                upload_multiplier = 1
-            elif upload_speed < 80000000:
-                upload_multiplier = int((upload_speed / 80000000) * 1000)
-            else:
-                upload_multiplier = 1000
-
-            if download_speed <= 3000000:
-                download_multiplier = 1
-            elif download_speed < 80000000:
-                download_multiplier = int((download_speed / 80000000) * 1000)
-            else:
-                download_multiplier = 1000
-
-            g.ftp_upload_blocksize = 8192 * upload_multiplier
-            g.ftp_download_blocksize = 8192 * download_multiplier
-
-        else:
-            g.ftp_upload_blocksize = 8192 * 10000
-            g.ftp_download_blocksize = 8192 * 10000
-
-    except Exception as e:
-        g.ftp_upload_blocksize = 8192 * 1000
-        g.ftp_download_blocksize = 8192 * 1000
-
-    g.ftp_client = get_ftp_client(creds['username'], creds['password'])
+from ..strings import functions
+from ..utils import download_file, get_key, setTimeout
 
 
 def benchmark():
-    g.logger.debug("Benchmarking in progress...")
-    initialize()
+    g.logger.debug("")
+    g.logger.debug("Starting benchmarking...")
+
     client = g.client
     initialTimeout = g.initialTimeout
 
@@ -75,7 +26,6 @@ def benchmark():
         benchmark_results = {}
 
         for benchmark_op in benchmark_ops:
-            # print("BM OP inside enumerate: ",benchmark_op)
             operator = get_key(benchmark_op['operator'], functions)
             t1 = time.time()
             compute_locally_bm(*benchmark_op['values'], op_type=benchmark_op['op_type'], operator=operator)
@@ -85,11 +35,11 @@ def benchmark():
     for file in os.listdir():
         if file.endswith(".zip"):
             os.remove(file)
-            
+
+    g.logger.debug("Benchmarking completed successfully!")
     g.logger.debug("Emitting Benchmark Results...")
     client.emit("benchmark_callback", data=json.dumps(benchmark_results), namespace="/client")
     client.sleep(1)
     g.logger.debug("Benchmarking Complete!")
 
     setTimeout(waitInterval, initialTimeout)
-    return benchmark_results

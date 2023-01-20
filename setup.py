@@ -7,7 +7,7 @@ long_description = (this_directory / "README.md").read_text()
 
 setup(
     name="ravpy",
-    version="0.6",
+    version="0.12",
     license='MIT',
     author="Raven Protocol",
     author_email='kailash@ravenprotocol.com',
@@ -24,10 +24,16 @@ setup(
         "python-socketio==5.4.1",
         "requests==2.27.1",
         "python-dotenv",
-        "scipy",
         "speedtest-cli",
         "terminaltables==3.1.10",
         "websocket-client",
-        "scikit-learn==1.1.1"
-    ]
+        "pyinstaller",
+        "scikit-learn",
+        "psutil",
+        "hurry.filesize",
+        "sqlalchemy",
+        "sqlalchemy-utils",
+    ],
+    app=["gui.py"],
+    setup_requires=["py2app"],
 )
