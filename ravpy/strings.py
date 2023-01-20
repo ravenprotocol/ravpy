@@ -28,7 +28,7 @@ class Operators(object):
     CUBE_ROOT = "cube_root"
     ABSOLUTE = "absolute"
 
-    # Matrix
+    # matric_sum
     MATRIX_MULTIPLICATION = "matrix_multiplication"
     MULTIPLY = "multiply"  # Elementwise multiplication
     DOT = "dot"
@@ -118,11 +118,18 @@ class Operators(object):
     RANDOM_FOREST_CLASSIFIER = "random_forest_classifier"
     RANDOM_FOREST_REGRESSOR = "random_forest_regressor"
 
+    START_BACKWARD_MARKER = "start_backward_marker"
+    STOP_BACKWARD_MARKER = "stop_backward_marker"
+
     # Deep Learning Ops
     FORWARD_PASS_DENSE = "forward_pass_dense"
     BACKWARD_PASS_DENSE = "backward_pass_dense"
-    FORWARD_PASS_BATCHNORM = "forward_pass_batchnorm"
-    BACKWARD_PASS_BATCHNORM = "backward_pass_batchnorm"
+    FORWARD_PASS_BATCHNORM1D = "forward_pass_batchnorm1d"
+    BACKWARD_PASS_BATCHNORM1D = "backward_pass_batchnorm1d"
+    FORWARD_PASS_BATCHNORM2D = "forward_pass_batchnorm2d"
+    BACKWARD_PASS_BATCHNORM2D = "backward_pass_batchnorm2d"
+    FORWARD_PASS_LAYERNORM = "forward_pass_layernorm"
+    BACKWARD_PASS_LAYERNORM = "backward_pass_layernorm"
     FORWARD_PASS_DROPOUT = "forward_pass_dropout"
     BACKWARD_PASS_DROPOUT = "backward_pass_dropout"
     FORWARD_PASS_ACTIVATION = "forward_pass_activation"
@@ -133,7 +140,27 @@ class Operators(object):
     BACKWARD_PASS_MAXPOOL2D = "backward_pass_maxpool2d"
     FORWARD_PASS_FLATTEN = "forward_pass_flatten"
     BACKWARD_PASS_FLATTEN = "backward_pass_flatten"
+    FORWARD_PASS_EMBEDDING = "forward_pass_embedding"
+    BACKWARD_PASS_EMBEDDING = "backward_pass_embedding"
 
+    FORWARD_PASS_CONCAT = "forward_pass_concat"
+    BACKWARD_PASS_CONCAT = "backward_pass_concat"
+    FORWARD_PASS_ADD = "forward_pass_add"
+    BACKWARD_PASS_ADD = "backward_pass_add"
+    FORWARD_PASS_SUBTRACT = "forward_pass_subtract"
+    BACKWARD_PASS_SUBTRACT = "backward_pass_subtract"
+    FORWARD_PASS_DOT = "forward_pass_dot"
+    BACKWARD_PASS_DOT = "backward_pass_dot"
+    FORWARD_PASS_RESHAPE = "forward_pass_reshape"
+    BACKWARD_PASS_RESHAPE = "backward_pass_reshape"
+    FORWARD_PASS_TRANSPOSE = "forward_pass_transpose"
+    BACKWARD_PASS_TRANSPOSE = "backward_pass_transpose"
+    FORWARD_PASS_POWER = "forward_pass_power"
+    BACKWARD_PASS_POWER = "backward_pass_power"
+    FORWARD_PASS_MULTIPLY = "forward_pass_multiply"
+    BACKWARD_PASS_MULTIPLY = "backward_pass_multiply"
+    FORWARD_PASS_DIVISION = "forward_pass_division"
+    BACKWARD_PASS_DIVISION = "backward_pass_division"
 
     # Loss Ops
     SQUARE_LOSS = "square_loss"
@@ -250,11 +277,18 @@ functions = {'lin': Operators.LINEAR,
              'random_forest_classifier': Operators.RANDOM_FOREST_CLASSIFIER,
              'random_forest_regressor': Operators.RANDOM_FOREST_REGRESSOR,
 
+             'start_backward_marker': Operators.START_BACKWARD_MARKER,
+             'stop_backward_marker': Operators.STOP_BACKWARD_MARKER,
+
             # Deep Learning Layer Ops
              'forward_pass_dense': Operators.FORWARD_PASS_DENSE,
              'backward_pass_dense': Operators.BACKWARD_PASS_DENSE,
-             'forward_pass_batchnorm': Operators.FORWARD_PASS_BATCHNORM,
-             'backward_pass_batchnorm': Operators.BACKWARD_PASS_BATCHNORM,
+             'forward_pass_batchnorm1d': Operators.FORWARD_PASS_BATCHNORM1D,
+             'backward_pass_batchnorm1d': Operators.BACKWARD_PASS_BATCHNORM1D,
+             'forward_pass_batchnorm2d': Operators.FORWARD_PASS_BATCHNORM2D,
+             'backward_pass_batchnorm2d': Operators.BACKWARD_PASS_BATCHNORM2D,
+             'forward_pass_layernorm': Operators.FORWARD_PASS_LAYERNORM,
+             'backward_pass_layernorm': Operators.BACKWARD_PASS_LAYERNORM,
              'forward_pass_dropout': Operators.FORWARD_PASS_DROPOUT,
              'backward_pass_dropout': Operators.BACKWARD_PASS_DROPOUT,
              'forward_pass_activation': Operators.FORWARD_PASS_ACTIVATION,
@@ -265,6 +299,27 @@ functions = {'lin': Operators.LINEAR,
              'backward_pass_flatten': Operators.BACKWARD_PASS_FLATTEN,
              'forward_pass_maxpool2d': Operators.FORWARD_PASS_MAXPOOL2D,
              'backward_pass_maxpool2d': Operators.BACKWARD_PASS_MAXPOOL2D,
+             'forward_pass_embedding': Operators.FORWARD_PASS_EMBEDDING,
+             'backward_pass_embedding': Operators.BACKWARD_PASS_EMBEDDING,
+
+             'forward_pass_concat': Operators.FORWARD_PASS_CONCAT,
+             'backward_pass_concat': Operators.BACKWARD_PASS_CONCAT,
+             'forward_pass_add': Operators.FORWARD_PASS_ADD,
+             'backward_pass_add': Operators.BACKWARD_PASS_ADD,
+             'forward_pass_subtract': Operators.FORWARD_PASS_SUBTRACT,
+             'backward_pass_subtract': Operators.BACKWARD_PASS_SUBTRACT,
+             'forward_pass_dot': Operators.FORWARD_PASS_DOT,
+             'backward_pass_dot': Operators.BACKWARD_PASS_DOT,
+             'forward_pass_reshape': Operators.FORWARD_PASS_RESHAPE,
+             'backward_pass_reshape': Operators.BACKWARD_PASS_RESHAPE,
+             'forward_pass_transpose': Operators.FORWARD_PASS_TRANSPOSE,
+             'backward_pass_transpose': Operators.BACKWARD_PASS_TRANSPOSE,
+             'forward_pass_power': Operators.FORWARD_PASS_POWER,
+             'backward_pass_power': Operators.BACKWARD_PASS_POWER,
+             'forward_pass_multiply': Operators.FORWARD_PASS_MULTIPLY,
+             'backward_pass_multiply': Operators.BACKWARD_PASS_MULTIPLY,
+             'forward_pass_division': Operators.FORWARD_PASS_DIVISION,
+             'backward_pass_division': Operators.BACKWARD_PASS_DIVISION,
         
             # Loss Ops
              'square_loss': Operators.SQUARE_LOSS,

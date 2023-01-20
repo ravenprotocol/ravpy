@@ -1,3 +1,4 @@
+import torch
 import numpy as np
 from scipy import stats
 
@@ -9,6 +10,17 @@ def np_positive(value, params=None):
     return np.positive(value)
 
 def np_add(value1, value2, params=None):
+    key = params.get("key", None)
+
+    if key is not None:
+        if isinstance(value1, dict):
+            value1 = np.array(value1[key["key"]])
+        
+        if isinstance(value2, dict):
+            value2 = np.array(value2[key["key"]])
+
+        return np.add(value1, value2)
+
     return np.add(value1, value2)
 
 def np_subtract(value1, value2, params=None):
@@ -49,11 +61,17 @@ def np_min(value1, params=None):
     return np.min(value1, axis=axis, keepdims=keepdims)
 
 def np_argmax(value1, params=None):
-    axis=params.get('axis',None)
+    if isinstance(value1, dict):
+        value1 = value1['result']
+    if isinstance(value1, list) or isinstance(value1, np.ndarray):
+        value1 = torch.tensor(value1)
+
+    dim=params.get('axis',None)
     keepdims=params.get('keepdims',None)
+
     if keepdims:
-        return np.argmax(value1, axis=axis, keepdims=keepdims)
-    return np.argmax(value1, axis=axis)
+        return value1.argmax(dim=dim, keepdim=keepdims)
+    return value1.argmax(dim=dim)
 
 def np_argmin(value1, params=None):
     axis=params.get('axis',None)
@@ -73,6 +91,10 @@ def np_multiply(value1, value2, params=None):
     return np.multiply(value1, value2)
 
 def np_matmul(value1, value2, params=None):
+    if isinstance(value1, dict):
+        value1 = value1['result']
+    if isinstance(value2, dict):
+        value2 = value2['result']
     return np.matmul(value1, value2)
 
 def np_dot(value1, value2, params=None):
@@ -411,26 +433,39 @@ def find_indices(arr,val, params=None):
     else:
         return result
 
-def reshape(tens,params=None):#shape=None):
+def reshape(X,params=None):#shape=None):
     shape = params.get('shape', None)
+    
+    if isinstance(X, dict):
+        X = X['result']
+    if isinstance(X, list) or isinstance(X, np.ndarray):
+        X = torch.tensor(X)
+    
     if shape is None:
         return None
     else:
-        return np.reshape(tens,newshape=shape)
+        return X.view(*shape) #np.reshape(tens,newshape=shape)
 
 def mode(arr,params=None):#axis=0):
     axis = params.get('axis', 0)
     result=stats.mode(arr,axis=axis)
     return result.mode
 
-def concatenate(*args,params=None):
-    param_string=""
-    for i in params.keys():
-        if type(params[i]) == str:
-            param_string+=","+i+"=\'"+str(params[i])+"\'"
-        else:
-            param_string+=","+i+"="+str(params[i])
-    result=eval("np.concatenate(args"+param_string+")")
+def concatenate(a,b,params=None):
+    axis = params.get('axis', 0)
+
+    if isinstance(a, dict):
+        a = a['result']
+    if isinstance(a, list) or isinstance(a, np.ndarray):
+        a = torch.tensor(a)
+
+    if isinstance(b, dict):
+        b = b['result']
+    if isinstance(b, list) or isinstance(b, np.ndarray):
+        b = torch.tensor(b)
+
+    result = torch.cat((a,b),dim=axis)
+
     return result
 
 def shape(arr,params=None):#index=None):
@@ -464,13 +499,22 @@ def repeat(arr,params=None):#repeats=None, axis=None):
 
 def index(arr,params=None):#indices=None):
     indices = params.get('indices', None)
+
+    if isinstance(arr, dict):
+        arr = arr['result']
+    if isinstance(arr, list) or isinstance(arr, np.ndarray):
+        arr = torch.tensor(arr)
+
+    print("\n\nindex arr: ",arr, arr.shape)
+
     if indices is None:
         raise Exception("indices param is missing")
+    indices = indices['indices']
     if isinstance(indices, str):
         # arr = np.array(arr)
-        result = eval("np.array(arr)"+indices)
+        result = eval("arr"+indices)
     else:
-        result = eval("np.array(arr)[{}]".format(tuple(indices)))
+        result = eval("arr[{}]".format(tuple(indices)))
     return result
 
 def join_to_list(a,b, params=None):
