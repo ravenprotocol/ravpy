@@ -333,29 +333,29 @@ def get_binary_result(value1, value2, params, operator):
 
 
 
-    # # Machine Learning Algorithms
-    # elif operator == "linear_regression":
-    #     result = linear_regression(value1, value2, params=params)
-    # elif operator == "knn_classifier":
-    #     result = knn_classifier(value1, value2, params=params)
-    # elif operator == "knn_regressor":
-    #     result = knn_regressor(value1, value2, params=params)
-    # elif operator == "logistic_regression":
-    #     result = logistic_regression(value1, value2, params=params)
-    # elif operator == "naive_bayes":
-    #     result = naive_bayes(value1, value2, params=params)
-    # elif operator == "svm_svc":
-    #     result = svm_svc(value1, value2, params=params)
-    # elif operator == "svm_svr":
-    #     result = svm_svr(value1, value2, params=params)
-    # elif operator == "decision_tree_classifier":
-    #     result = decision_tree_classifier(value1, value2, params=params)
-    # elif operator == "decision_tree_regressor":
-    #     result = decision_tree_regressor(value1, value2, params=params)
-    # elif operator == "random_forest_classifier":
-    #     result = random_forest_classifier(value1, value2, params=params)
-    # elif operator == "random_forest_regressor":
-    #     result = random_forest_regressor(value1, value2, params=params)
+    # Machine Learning Algorithms
+    elif operator == "linear_regression":
+        result = linear_regression(value1, value2, params=params)
+    elif operator == "knn_classifier":
+        result = knn_classifier(value1, value2, params=params)
+    elif operator == "knn_regressor":
+        result = knn_regressor(value1, value2, params=params)
+    elif operator == "logistic_regression":
+        result = logistic_regression(value1, value2, params=params)
+    elif operator == "naive_bayes":
+        result = naive_bayes(value1, value2, params=params)
+    elif operator == "svm_svc":
+        result = svm_svc(value1, value2, params=params)
+    elif operator == "svm_svr":
+        result = svm_svr(value1, value2, params=params)
+    elif operator == "decision_tree_classifier":
+        result = decision_tree_classifier(value1, value2, params=params)
+    elif operator == "decision_tree_regressor":
+        result = decision_tree_regressor(value1, value2, params=params)
+    elif operator == "random_forest_classifier":
+        result = random_forest_classifier(value1, value2, params=params)
+    elif operator == "random_forest_regressor":
+        result = random_forest_regressor(value1, value2, params=params)
 
     # Deep Learning Ops
     elif operator == "forward_pass_concat":
