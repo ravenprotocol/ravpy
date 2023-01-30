@@ -49,7 +49,6 @@ def cross_entropy_loss(y, y_pred, params = None):
 
 def forward_pass_dense(X, params=None):
     n_units = params.get('n_units', None)
-    data = params.get('data', None)
     initial_W = params.get('initial_W', None)
     initial_w0 = params.get('initial_w0', None)
     optimizer_dict = params.get('optimizer_dict', None)
@@ -77,14 +76,11 @@ def forward_pass_dense(X, params=None):
             if 'optimizer' in previous_batch_layer_data:
                 optimizer = previous_batch_layer_data['optimizer']
         else:
-            if data is None:
-                lin = torch.nn.Linear(in_features=X.shape[-1], out_features=n_units, bias=True)
-                if initial_W is not None:
-                    lin.weight.data = torch.tensor(initial_W, dtype=torch.float32)
-                if initial_w0 is not None:
-                    lin.bias.data = torch.tensor(initial_w0, dtype=torch.float32)
-            else:
-                lin = data['instance']
+            lin = torch.nn.Linear(in_features=X.shape[-1], out_features=n_units, bias=True)
+            if initial_W is not None:
+                lin.weight.data = torch.tensor(initial_W, dtype=torch.float32)
+            if initial_w0 is not None:
+                lin.bias.data = torch.tensor(initial_w0, dtype=torch.float32)
 
         if optimizer_dict is not None:
             optimizer = get_optimizer(lin, **optimizer_dict)
@@ -103,7 +99,6 @@ def forward_pass_batchnorm1d(X, params=None):
     eps = params.get('eps', 0.00001)
     affine = params.get('affine', True)
     training = params.get('training', None)
-    data = params.get('data', None)
     initial_gamma = params.get('initial_gamma', None)
     initial_beta = params.get('initial_beta', None)
     initial_running_mean = params.get('initial_running_mean', None)
@@ -134,18 +129,16 @@ def forward_pass_batchnorm1d(X, params=None):
             if 'optimizer' in previous_batch_layer_data:
                 optimizer = previous_batch_layer_data['optimizer']
         else:
-            if data is None:
-                bn = torch.nn.BatchNorm1d(num_features=X.shape[-1], momentum=momentum, eps=eps, affine=affine)
-                if initial_gamma is not None:
-                    bn.weight.data = torch.tensor(initial_gamma, dtype=torch.float32)
-                if initial_beta is not None:
-                    bn.bias.data = torch.tensor(initial_beta, dtype=torch.float32)
-                if initial_running_mean is not None:
-                    bn.running_mean.data = torch.tensor(initial_running_mean, dtype=torch.float32)
-                if initial_running_var is not None:
-                    bn.running_var.data = torch.tensor(initial_running_var, dtype=torch.float32)
-            else:
-                bn = data['instance']
+            bn = torch.nn.BatchNorm1d(num_features=X.shape[-1], momentum=momentum, eps=eps, affine=affine)
+            if initial_gamma is not None:
+                bn.weight.data = torch.tensor(initial_gamma, dtype=torch.float32)
+            if initial_beta is not None:
+                bn.bias.data = torch.tensor(initial_beta, dtype=torch.float32)
+            if initial_running_mean is not None:
+                bn.running_mean.data = torch.tensor(initial_running_mean, dtype=torch.float32)
+            if initial_running_var is not None:
+                bn.running_var.data = torch.tensor(initial_running_var, dtype=torch.float32)
+
         if not training:
             bn.eval()
         
@@ -165,7 +158,6 @@ def forward_pass_batchnorm2d(X, params=None):
     momentum = params.get('momentum', 0.1)
     eps = params.get('eps', 0.00001)
     training = params.get('training', None)
-    data = params.get('data', None)
     affine = params.get('affine', True)
     initial_gamma = params.get('initial_gamma', None)
     initial_beta = params.get('initial_beta', None)
@@ -197,18 +189,16 @@ def forward_pass_batchnorm2d(X, params=None):
             if 'optimizer' in previous_batch_layer_data:
                 optimizer = previous_batch_layer_data['optimizer']
         else:
-            if data is None:
-                bn = torch.nn.BatchNorm2d(num_features=num_features, momentum=momentum, eps=eps, affine=affine)
-                if initial_gamma is not None:
-                    bn.weight.data = torch.tensor(initial_gamma, dtype=torch.float32)
-                if initial_beta is not None:
-                    bn.bias.data = torch.tensor(initial_beta, dtype=torch.float32)
-                if initial_running_mean is not None:
-                    bn.running_mean.data = torch.tensor(initial_running_mean, dtype=torch.float32)
-                if initial_running_var is not None:
-                    bn.running_var.data = torch.tensor(initial_running_var, dtype=torch.float32)
-            else:
-                bn = data['instance']
+            bn = torch.nn.BatchNorm2d(num_features=num_features, momentum=momentum, eps=eps, affine=affine)
+            if initial_gamma is not None:
+                bn.weight.data = torch.tensor(initial_gamma, dtype=torch.float32)
+            if initial_beta is not None:
+                bn.bias.data = torch.tensor(initial_beta, dtype=torch.float32)
+            if initial_running_mean is not None:
+                bn.running_mean.data = torch.tensor(initial_running_mean, dtype=torch.float32)
+            if initial_running_var is not None:
+                bn.running_var.data = torch.tensor(initial_running_var, dtype=torch.float32)
+
         if not training:
             bn.eval()
         if optimizer_dict is not None:
@@ -224,7 +214,6 @@ def forward_pass_batchnorm2d(X, params=None):
 
 def forward_pass_layernorm(X, params=None):
     eps = params.get('eps', 1e-05)
-    data = params.get('data', None)
     training = params.get('training', None)
     normalized_shape = params.get('normalized_shape', None)
     initial_W = params.get('initial_W', None)
@@ -255,14 +244,12 @@ def forward_pass_layernorm(X, params=None):
             if 'optimizer' in previous_batch_layer_data:
                 optimizer = previous_batch_layer_data['optimizer']
         else:
-            if data is None:
-                ln = torch.nn.LayerNorm(normalized_shape=normalized_shape,eps=eps)
-                if initial_W is not None:
-                    ln.weight.data = torch.tensor(initial_W, dtype=torch.float32)
-                if initial_w0 is not None:
-                    ln.bias.data = torch.tensor(initial_w0, dtype=torch.float32)
-            else:
-                ln = data['instance']
+            ln = torch.nn.LayerNorm(normalized_shape=normalized_shape,eps=eps)
+            if initial_W is not None:
+                ln.weight.data = torch.tensor(initial_W, dtype=torch.float32)
+            if initial_w0 is not None:
+                ln.bias.data = torch.tensor(initial_w0, dtype=torch.float32)
+
         if not training:
             ln.eval()
 
@@ -351,7 +338,6 @@ def forward_pass_conv2d(X, params=None):
     groups = params.get('groups', 1)
     bias = params.get('bias', True)
     padding_mode = params.get('padding_mode', 'zeros')
-    data = params.get('data', None)
     initial_W = params.get('initial_W', None)
     initial_w0 = params.get('initial_w0', None)
     optimizer_dict = params.get('optimizer_dict', None)
@@ -379,14 +365,11 @@ def forward_pass_conv2d(X, params=None):
             if 'optimizer' in previous_batch_layer_data:
                 optimizer = previous_batch_layer_data['optimizer']
         else:
-            if data is None:
-                conv2d = torch.nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride, padding=padding, dilation=dilation, groups=groups, bias=bias, padding_mode=padding_mode)
-                if initial_W is not None:
-                    conv2d.weight.data = torch.tensor(initial_W, dtype=torch.float32)
-                if initial_w0 is not None:
-                    conv2d.bias.data = torch.tensor(initial_w0, dtype=torch.float32)
-            else:
-                conv2d = data['instance']
+            conv2d = torch.nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride, padding=padding, dilation=dilation, groups=groups, bias=bias, padding_mode=padding_mode)
+            if initial_W is not None:
+                conv2d.weight.data = torch.tensor(initial_W, dtype=torch.float32)
+            if initial_w0 is not None:
+                conv2d.bias.data = torch.tensor(initial_w0, dtype=torch.float32)
         
         if optimizer_dict is not None:
             optimizer = get_optimizer(conv2d, **optimizer_dict)
@@ -604,7 +587,6 @@ def forward_pass_division(x1,x2, params=None):
 def forward_pass_embedding(X, params=None):
     vocab_size = params.get('vocab_size', None)
     embed_dim = params.get('embed_dim', None)
-    data = params.get('data', None)
     initial_W = params.get('initial_weights', None)
     optimizer_dict = params.get('optimizer_dict', None)
     previous_batch_layer_data = params.get('previous_batch_layer_data', None)    
@@ -632,17 +614,11 @@ def forward_pass_embedding(X, params=None):
             if 'optimizer' in previous_batch_layer_data:
                 optimizer = previous_batch_layer_data['optimizer']
         else:
-            if data is None:
-                emb = torch.nn.Embedding(num_embeddings=vocab_size, embedding_dim=embed_dim)
-                if initial_W is not None:
-                    emb.weight.data = torch.tensor(initial_W, dtype=torch.float32)
-            else:
-                emb = data['instance']
-        if data is not None:
-            optimizer_old = data['optimizer']
-            optimizer = torch.optim.Adam(emb.parameters())
-            optimizer.load_state_dict(optimizer_old.state_dict())
-        elif optimizer_dict is not None:
+            emb = torch.nn.Embedding(num_embeddings=vocab_size, embedding_dim=embed_dim)
+            if initial_W is not None:
+                emb.weight.data = torch.tensor(initial_W, dtype=torch.float32)
+
+        if optimizer_dict is not None:
             optimizer = torch.optim.Adam(emb.parameters(), lr=optimizer_dict['lr'], betas=optimizer_dict['betas'], eps=optimizer_dict['eps'], weight_decay=optimizer_dict['weight_decay'], amsgrad=optimizer_dict['amsgrad'])
         
         result = emb(X.type(torch.int64))
