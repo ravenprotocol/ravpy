@@ -4,38 +4,32 @@ import sys
 import socket
 from terminaltables import AsciiTable
 from zipfile import ZipFile
-
 from .compute import compute_locally, emit_error
-from ..config import FTP_DOWNLOAD_FILES_FOLDER
+from ..config import FTP_DOWNLOAD_FILES_FOLDER, FTP_TEMP_FILES_FOLDER
 from ..globals import g
-from ..utils import setTimeout, stopTimer
+from ..utils import setTimeout, stopTimer, dump_data
 
 timeoutId = g.timeoutId
 opTimeout = g.opTimeout
 initialTimeout = g.initialTimeout
 client = g.client
 
-
-@g.client.on('subgraph', namespace="/client")
-def compute_subgraph(d):
+@g.client.on('subgraph_forward', namespace="/client")
+def compute_subgraph_forward(d):
     global client, timeoutId
-    g.logger.debug("")
-    g.logger.debug("Subgraph received!")
-    g.logger.debug("Graph id: {}, subgraph id: {}".format(d['graph_id'], d["subgraph_id"]))
+
     os.system('clear')
-    # print("Received Subgraph : ",d["subgraph_id"]," of Graph : ",d["graph_id"])
     print(AsciiTable([['Provider Dashboard']]).table)
     g.dashboard_data.append([d["subgraph_id"], d["graph_id"], "Computing"])
     print(AsciiTable(g.dashboard_data).table)
-
-    # create a subgraph row in database
-    subgraph_obj = g.ravdb.add_subgraph(graph_id=d["graph_id"], subgraph_id=d["subgraph_id"], status="Computing")
-    g.ravdb.update_subgraph(subgraph=subgraph_obj, status="Computing")
 
     g.has_subgraph = True
     subgraph_id = d["subgraph_id"]
     graph_id = d["graph_id"]
     data = d["payloads"]
+
+    subgraph_outputs = d["subgraph_outputs_list"]
+
     subgraph_zip_file_flag = d["subgraph_zip_file_flag"]
     results = []
     g.error = False
@@ -54,17 +48,8 @@ def compute_subgraph(d):
             g.dashboard_data[-1][2] = "Failed"
             print(AsciiTable([['Provider Dashboard']]).table)
             print(AsciiTable(g.dashboard_data).table)
-
-            # update subgraph
-            g.ravdb.update_subgraph(subgraph=subgraph_obj,
-                                    status="Failed")
-
-            g.logger.debug("Error: {}".format(str(error)))
-
             g.has_subgraph = False
-            stopTimer(timeoutId)
-            timeoutId = setTimeout(waitInterval, opTimeout)
-
+            
             delete_dir = FTP_DOWNLOAD_FILES_FOLDER
             for f in os.listdir(delete_dir):
                 os.remove(os.path.join(delete_dir, f))
@@ -72,9 +57,10 @@ def compute_subgraph(d):
             g.delete_files_list = []
             g.outputs = {}
 
+            print('Error: ', error)
             emit_error(data[0], error, subgraph_id, graph_id)
             if 'broken pipe' in str(error).lower() or '421' in str(error).lower():
-                g.logger.debug(
+                print(
                     '\n\nYou have encountered an IO based Broken Pipe Error. \nRestart terminal and try connecting again')
                 sys.exit()
 
@@ -86,58 +72,117 @@ def compute_subgraph(d):
             os.remove(download_path)
             g.ftp_client.delete_file(server_file_path)
 
-    for index, op_obj in enumerate(data):
+    for index in data:
+        if index['op_id'] in subgraph_outputs:
+            to_upload = True
+        else:
+            to_upload = False
+        operation_type = index["op_type"]
+        operator = index["operator"]
+        if operator == "start_backward_marker":
+            for key in g.forward_computations.keys():
+                op_result = g.forward_computations[key]
+                if isinstance(op_result, dict):
+                    op_optimizer = op_result.get('optimizer', None)
+                    if op_optimizer is not None:
+                        op_optimizer.zero_grad()
 
-        # Perform
-        operation_type = op_obj["op_type"]
-        operator = op_obj["operator"]
+            for input_value in index["values"]:
+                if "op_id" in input_value:
+                    loss = g.forward_computations[input_value['op_id']]
+                    loss.backward(retain_graph=True)
+
+            for key in g.forward_computations.keys():
+                op_result = g.forward_computations[key]
+                if isinstance(op_result, dict):
+                    op_optimizer = op_result.get('optimizer', None)
+                    if op_optimizer is not None:
+                        op_optimizer.step()
+
+            results.append(json.dumps({
+                'operator': operator,
+                'status': 'success',
+                'op_id': index['op_id']
+            }))
+            continue
+
         if operation_type is not None and operator is not None:
-            result_payload = compute_locally(op_obj, subgraph_id, graph_id)
-
+            result_payload = compute_locally(payload=index, subgraph_id=subgraph_id, graph_id=graph_id, to_upload=to_upload)
             if not g.error:
-                results.append(result_payload)
-
-                # update subgraph
-                g.ravdb.update_subgraph(subgraph=subgraph_obj,
-                                        progress=((index+1)/len(data))*100)
+                if result_payload is not None:
+                    results.append(result_payload)
             else:
                 break
 
     if not g.error:
+        optimized_results_list = []
+        for index in data:
+            if index['op_id'] in subgraph_outputs:
+                to_upload = True
+            else:
+                to_upload = False
+            if to_upload:
+                results_dict = {}
+                previous_instance_dict = index['params'].get('previous_forward_pass', None)
+                if previous_instance_dict is not None and 'op_id' in previous_instance_dict.keys():
+                    previous_instance_id = previous_instance_dict['op_id']
+                    if g.forward_computations[previous_instance_id].get('instance', None) is not None:
+                        results_dict['instance'] = g.forward_computations[previous_instance_id]['instance']
+                    if g.forward_computations[previous_instance_id].get('optimizer', None) is not None:
+                        results_dict['optimizer'] = g.forward_computations[previous_instance_id]['optimizer']
 
-        # check if file exists
+                    results_dict['result'] = g.forward_computations[index['op_id']]['result']
+                    file_path = dump_data(index['op_id'], results_dict)
+                    dumped_result = json.dumps({
+                        'file_name': os.path.basename(file_path),
+                        "op_id": index['op_id'],
+                        "status": "success"
+                    })
+                    optimized_results_list.append(dumped_result)                
+                else:
+                    results_dict = g.forward_computations[index['op_id']]
+                    file_path = dump_data(index['op_id'], results_dict)
+                    dumped_result = json.dumps({
+                        'file_name': os.path.basename(file_path),
+                        "op_id": index['op_id'],
+                        "status": "success"
+                    })
+                    optimized_results_list.append(dumped_result)
+
+        optimized_results_list.extend(results) 
+        results = optimized_results_list       
+
+        for temp_file in os.listdir(FTP_TEMP_FILES_FOLDER):
+            if 'temp_' in temp_file and '.pkl' in temp_file:
+                file_path = os.path.join(FTP_TEMP_FILES_FOLDER, temp_file)
+                with ZipFile('local_{}_{}.zip'.format(subgraph_id, graph_id), 'a') as zipObj2:
+                    zipObj2.write(file_path, os.path.basename(file_path))
+                os.remove(file_path)
+
         zip_file_name = 'local_{}_{}.zip'.format(subgraph_id, graph_id)
         if os.path.exists(zip_file_name):
             g.ftp_client.upload(zip_file_name, zip_file_name)
             os.remove(zip_file_name)
 
-        emit_result_data = {"subgraph_id": d["subgraph_id"], "graph_id": d["graph_id"], "token": g.ravenverse_token,
+        emit_result_data = {"subgraph_id": d["subgraph_id"], 
+                            "graph_id": d["graph_id"], 
+                            "token": g.ravenverse_token,
                             "results": results}
-        client.emit("subgraph_completed", json.dumps(emit_result_data), namespace="/client")
-        # print('Emitted subgraph_completed')
+        client.emit("forward_subgraph_completed", json.dumps(emit_result_data), namespace="/client")
 
         os.system('clear')
         g.dashboard_data[-1][2] = "Computed"
         print(AsciiTable([['Provider Dashboard']]).table)
         print(AsciiTable(g.dashboard_data).table)
 
-        # update subgraph
-        g.ravdb.update_subgraph(subgraph=subgraph_obj,
-                                status="Computed")
-
-        g.logger.debug("Subgraph computed successfully")
-
     g.has_subgraph = False
-
-    stopTimer(timeoutId)
-    timeoutId = setTimeout(waitInterval, opTimeout)
 
     delete_dir = FTP_DOWNLOAD_FILES_FOLDER
     for f in os.listdir(delete_dir):
         os.remove(os.path.join(delete_dir, f))
 
     g.delete_files_list = []
-    g.outputs = {}
+    g.forward_computations = {}
 
 
 @g.client.on('ping', namespace="/client")
@@ -169,11 +214,6 @@ def waitInterval():
         os._exit(1)
 
     if g.client.connected:
-        if not g.has_subgraph:
-            client.emit("get_op", json.dumps({
-                "message": "Send me an aop"
-            }), namespace="/client")
-
         stopTimer(timeoutId)
         timeoutId = setTimeout(waitInterval, opTimeout)
 
@@ -199,3 +239,8 @@ def exit_handler():
         g.logger.debug("Disconnecting...")
         if g.client.connected:
             g.client.emit("disconnect", namespace="/client")
+
+    dir = FTP_TEMP_FILES_FOLDER
+    if os.path.exists(dir):
+        for f in os.listdir(dir):
+            os.remove(os.path.join(dir, f))

@@ -102,7 +102,6 @@ def get_ftp_credentials():
     else:
         g.logger.debug("Unable to fetch ftp credentials. Try again after some time or "
                        "contact our team at team@ravenprotocol.com")
-        g.logger.debug(r.text)
         return None
 
 
@@ -211,7 +210,7 @@ def dump_data(op_id, value):
         os.remove(file_path)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, 'wb') as f:
-        pkl.dump(value, f)
+        pkl.dump(value, f, protocol=pkl.HIGHEST_PROTOCOL)
     return file_path
 
 
@@ -222,6 +221,14 @@ def load_data(path):
     with open(path, 'rb') as f:
         data = pkl.load(f)
     return np.array(data)
+
+def load_data_raw(path):
+    """
+    Load data from file
+    """
+    with open(path, 'rb') as f:
+        data = pkl.load(f)
+    return data
 
 
 def initialize_ftp_client():

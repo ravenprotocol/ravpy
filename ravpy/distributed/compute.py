@@ -4,18 +4,17 @@ import os
 import sys
 import time
 
+from terminaltables import AsciiTable
 from ..config import FTP_DOWNLOAD_FILES_FOLDER
 from ..globals import g
 from ..strings import functions
-from ..utils import get_key, dump_data, load_data
+from ..utils import get_key, load_data, load_data_raw
 from .op_functions import *
 
 
 def compute_locally_bm(*args, **kwargs):
     operator = kwargs.get("operator", None)
     op_type = kwargs.get("op_type", None)
-    param_args = kwargs.get("params", None)
-    # print("Operator", operator,"Op Type:",op_type)
     if op_type == "unary":
         value1 = args[0]
         params = {}
@@ -35,124 +34,112 @@ def compute_locally_bm(*args, **kwargs):
 
 
 # async
-def compute_locally(payload, subgraph_id, graph_id):
+def compute_locally(payload, subgraph_id, graph_id, to_upload=False):
     try:
-        # print("Computing ",payload["operator"])
-        # print('\n\nPAYLOAD: ',payload)
-
         values = []
-
         for i in range(len(payload["values"])):
             if "value" in payload["values"][i].keys():
                 if "path" not in payload["values"][i].keys():
-                    values.append(payload["values"][i]["value"])
+                    values.append(torch.tensor(payload["values"][i]["value"]))
 
                 else:
                     download_path = os.path.join(FTP_DOWNLOAD_FILES_FOLDER,
-                                                 os.path.basename(payload["values"][i]["path"]))
-                    value = load_data(download_path).tolist()
+                                                    os.path.basename(payload["values"][i]["path"]))
+                    value = load_data_raw(download_path)
+
+                    if isinstance(value, dict):
+                        value = value['result']
+
+                    if isinstance(value, list) or isinstance(value, np.ndarray):
+                        value = torch.tensor(value)
+
                     values.append(value)
 
             elif "op_id" in payload["values"][i].keys():
-                values.append(g.outputs[payload['values'][i]['op_id']])
-
+                values.append(g.forward_computations[payload['values'][i]['op_id']])
+                
         payload["values"] = values
-
-        # print("Payload Values: ", payload)
 
         op_type = payload["op_type"]
         operator = get_key(payload["operator"], functions)
         params = payload['params']
+        instance = payload.get('instance', None)
+        optimizer = None
 
+        if instance is not None:
+            download_path = os.path.join(FTP_DOWNLOAD_FILES_FOLDER, os.path.basename(instance))
+            instance_dict = load_data_raw(download_path)
+            instance = instance_dict.get('instance', None)
+            optimizer = instance_dict.get('optimizer', None)
+
+        params['instance'] = instance
+        params['optimizer'] = optimizer
+
+        params_dict = {}
         for i in params.keys():
+            if i == "previous_forward_pass":
+                if 'op_id' in params[i].keys():
+                    previous_instance = g.forward_computations[params[i]['op_id']]
+                    params_dict[i] = previous_instance
+                elif 'value' in params[i].keys():
+                    download_path = os.path.join(FTP_DOWNLOAD_FILES_FOLDER,
+                                                    os.path.basename(params[i]['path']))
+                    previous_instance = load_data_raw(download_path)
+                    params_dict['previous_batch_layer_data'] = previous_instance
+        
+                continue
+
             if type(params[i]) == str:
-                temp = ast.literal_eval(params[i])
-                if type(temp) == dict:
-                    params[i] = temp
+                try:
+                    temp = ast.literal_eval(params[i])
+                    if type(temp) == dict or type(temp) == bool:
+                        params_dict[i] = temp
+                except:
+                    params_dict[i] = params[i]
             elif type(params[i]) == dict:
                 if 'op_id' in params[i].keys():
                     op_id = params[i]["op_id"]
-                    param_value = g.outputs[op_id]
+                    param_value = g.forward_computations[op_id].numpy().tolist()
                 elif 'value' in params[i].keys():
                     download_path = os.path.join(FTP_DOWNLOAD_FILES_FOLDER,
                                                     os.path.basename(params[i]["path"]))
                     param_value = load_data(download_path).tolist()
                 
-                params[i] = param_value
+                params_dict[i] = param_value
 
         if op_type == "unary":
-            result = get_unary_result(payload["values"][0], params, operator)
+            val_1 = payload["values"][0]
+            result = get_unary_result(val_1, params_dict, operator)
+
         elif op_type == "binary":
-            result = get_binary_result(payload["values"][0], payload["values"][1], params, operator)
+            val_1 = payload["values"][0]
+            val_2 = payload["values"][1]
+            result = get_binary_result(val_1, val_2, params_dict, operator)
 
-        if 'sklearn' in str(type(result)):
-            file_path = upload_result(payload, result, subgraph_id=subgraph_id,
-                                      graph_id=graph_id)  # upload_result(payload, result)
+        g.forward_computations[payload['op_id']] = result
+                
+        if not to_upload:
             return json.dumps({
                 'op_type': payload["op_type"],
-                'file_name': os.path.basename(file_path),
                 'operator': payload["operator"],
                 "op_id": payload["op_id"],
                 "status": "success"
             })
-
-        if 'dict' in str(type(result)):
-            file_path = upload_result(payload, result, subgraph_id=subgraph_id,
-                                      graph_id=graph_id)  # upload_result(payload, result)
-            g.outputs[payload["op_id"]] = result
-
-            return json.dumps({
-                'op_type': payload["op_type"],
-                'file_name': os.path.basename(file_path),
-                'operator': payload["operator"],
-                "op_id": payload["op_id"],
-                "status": "success"
-            })
-
-        if not isinstance(result, np.ndarray):
-            result = np.array(result)
-
-        result_byte_size = result.size * result.itemsize
-
-        if result_byte_size < (30 * 1000000) // 10000:
-            try:
-                result = result.tolist()
-            except:
-                result = result
-
-            g.outputs[payload["op_id"]] = result
-
-            return json.dumps({
-                'op_type': payload["op_type"],
-                'result': result,
-                'operator': payload["operator"],
-                "op_id": payload["op_id"],
-                "status": "success"
-            })
-
         else:
-
-            file_path = upload_result(payload, result, subgraph_id=subgraph_id,
-                                      graph_id=graph_id)  # upload_result(payload, result)
-            g.outputs[payload["op_id"]] = result.tolist()
-
-            return json.dumps({
-                'op_type': payload["op_type"],
-                'file_name': os.path.basename(file_path),
-                'operator': payload["operator"],
-                "op_id": payload["op_id"],
-                "status": "success"
-            })
+            return None
 
     except Exception as error:
-        print('Error: ', error)
+        os.system('clear')
+        g.dashboard_data[-1][2] = "Failed"
+        print(AsciiTable([['Provider Dashboard']]).table)
+        print(AsciiTable(g.dashboard_data).table)
         emit_error(payload, error, subgraph_id, graph_id)
         if 'broken pipe' in str(error).lower() or '421' in str(error).lower():
             print('\n\nYou have encountered an IO based Broken Pipe Error. \nRestart terminal and try connecting again')
             sys.exit()
 
 
-def get_unary_result(value1, params, operator):
+def  get_unary_result(value1, params, operator):
     if operator == "neg":
         result = np_negative(value1, params=params)
     elif operator == "pos":
@@ -253,33 +240,30 @@ def get_unary_result(value1, params, operator):
     # Deep Learning Layers
     elif operator == "forward_pass_dense":
         result = forward_pass_dense(value1, params=params)
-    elif operator == "backward_pass_dense":
-        result = backward_pass_dense(value1, params=params)
-    elif operator == "forward_pass_batchnorm":
-        result = forward_pass_batchnorm(value1, params=params)
-    elif operator == "backward_pass_batchnorm":
-        result = backward_pass_batchnorm(value1, params=params)
+    elif operator == "forward_pass_batchnorm1d":
+        result = forward_pass_batchnorm1d(value1, params=params)
+    elif operator == "forward_pass_batchnorm2d":
+        result = forward_pass_batchnorm2d(value1, params=params)
+    elif operator == "forward_pass_layernorm":
+        result = forward_pass_layernorm(value1, params=params)
     elif operator == "forward_pass_dropout":
         result = forward_pass_dropout(value1, params=params)
-    elif operator == "backward_pass_dropout":
-        result = backward_pass_dropout(value1, params=params)
     elif operator == "forward_pass_activation":
         result = forward_pass_activation(value1, params=params)
-    elif operator == "backward_pass_activation":
-        result = backward_pass_activation(value1, params=params)
     elif operator == "forward_pass_conv2d":
         result = forward_pass_conv2d(value1, params=params)
-    elif operator == "backward_pass_conv2d":
-        result = backward_pass_conv2d(value1, params=params)
     elif operator == "forward_pass_maxpool2d":
         result = forward_pass_maxpool2d(value1, params=params)
-    elif operator == "backward_pass_maxpool2d":
-        result = backward_pass_maxpool2d(value1, params=params)
     elif operator == "forward_pass_flatten":
         result = forward_pass_flatten(value1, params=params)
-    elif operator == "backward_pass_flatten":
-        result = backward_pass_flatten(value1, params=params)
-
+    elif operator == "forward_pass_embedding":
+        result = forward_pass_embedding(value1, params=params)
+    elif operator == "forward_pass_reshape":
+        result = forward_pass_reshape(value1, params=params)
+    elif operator == "forward_pass_transpose":
+        result = forward_pass_transpose(value1, params=params)
+    elif operator == "forward_pass_power":
+        result = forward_pass_power(value1, params= params)
     return result
 
 
@@ -373,45 +357,35 @@ def get_binary_result(value1, value2, params, operator):
     elif operator == "random_forest_regressor":
         result = random_forest_regressor(value1, value2, params=params)
 
+    # Deep Learning Ops
+    elif operator == "forward_pass_concat":
+        result = forward_pass_concat(value1, value2, params=params)
+    elif operator == "forward_pass_add":
+        result = forward_pass_add(value1, value2, params=params)
+    elif operator == "forward_pass_subtract":
+        result = forward_pass_subtract(value1, value2, params=params)
+    elif operator == "forward_pass_dot":
+        result = forward_pass_dot(value1, value2, params=params)
+    elif operator == "forward_pass_multiply":
+        result = forward_pass_multiply(value1, value2, params=params)
+    elif operator == "forward_pass_division":
+        result = forward_pass_division(value1, value2, params=params)
 
     # Losses
     elif operator == 'square_loss':
         result = square_loss(value1, value2, params=params)
-    elif operator == 'square_loss_gradient':
-        result = square_loss_gradient(value1, value2, params=params)
     elif operator == 'cross_entropy_loss':
         result = cross_entropy_loss(value1, value2, params=params)
-    elif operator == 'cross_entropy_gradient':
-        result = cross_entropy_gradient(value1, value2, params=params)
-    elif operator == 'cross_entropy_accuracy':
-        result = cross_entropy_accuracy(value1, value2, params=params)
 
     return result
 
 
-def upload_result(payload, result, subgraph_id=None, graph_id=None):
-    try:
-        result = result.tolist()
-    except:
-        result = result
-
-    file_path = dump_data(payload['op_id'], result)
-
-    from zipfile import ZipFile
-    with ZipFile('local_{}_{}.zip'.format(subgraph_id, graph_id), 'a') as zipObj2:
-        zipObj2.write(file_path, os.path.basename(file_path))
-
-    os.remove(file_path)
-
-    return file_path
-
-
 def emit_error(payload, error, subgraph_id, graph_id):
+    print("Emit Error")
     g.error = True
     error = str(error)
     client = g.client
-    print("Emmit error:{}".format(str(error)))
-    client.emit("op_completed", json.dumps({
+    client.emit("error_handler", json.dumps({
         'op_type': payload["op_type"],
         'error': error,
         'operator': payload["operator"],

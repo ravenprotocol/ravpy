@@ -8,7 +8,6 @@ from ..utils import apply_rules, get_subgraph_ops, get_federated_graph
 
 def participate(graph_id, file_path):
     graph = get_federated_graph(graph_id=graph_id)
-    print()
     if graph is None:
         raise Exception("Invalid graph id")
 

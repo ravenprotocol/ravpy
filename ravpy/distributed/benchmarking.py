@@ -28,7 +28,7 @@ def benchmark():
         for benchmark_op in benchmark_ops:
             operator = get_key(benchmark_op['operator'], functions)
             t1 = time.time()
-            compute_locally_bm(*benchmark_op['values'], op_type=benchmark_op['op_type'], operator=operator)
+            res = compute_locally_bm(*benchmark_op['values'], op_type=benchmark_op['op_type'], operator=operator)
             t2 = time.time()
             benchmark_results[benchmark_op["operator"]] = t2 - t1
 
@@ -36,8 +36,6 @@ def benchmark():
         if file.endswith(".zip"):
             os.remove(file)
 
-    g.logger.debug("Benchmarking completed successfully!")
-    g.logger.debug("Emitting Benchmark Results...")
     client.emit("benchmark_callback", data=json.dumps(benchmark_results), namespace="/client")
     client.sleep(1)
     g.logger.debug("Benchmarking Complete!")
