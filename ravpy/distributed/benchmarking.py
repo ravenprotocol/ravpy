@@ -10,7 +10,7 @@ from ..strings import functions
 from ..utils import download_file, get_key, setTimeout
 
 
-def benchmark():
+def benchmark(graph_id=None):
     g.logger.debug("")
     g.logger.debug("Starting benchmarking...")
 
@@ -36,7 +36,15 @@ def benchmark():
         if file.endswith(".zip"):
             os.remove(file)
 
-    client.emit("benchmark_callback", data=json.dumps(benchmark_results), namespace="/client")
+    if graph_id is None:
+        graph_id = "None"
+
+    benchmark_data = {
+        'benchmark_data':benchmark_results,
+        'graph_id':graph_id
+    }
+
+    client.emit("benchmark_callback", data=json.dumps(benchmark_data), namespace="/client")
     client.sleep(1)
     g.logger.debug("Benchmarking Complete!")
 

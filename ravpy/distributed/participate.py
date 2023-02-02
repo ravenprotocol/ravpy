@@ -4,14 +4,14 @@ from ..globals import g
 from ..utils import initialize_ftp_client
 
 
-def participate():
+def participate(graph_id=None):
     # Initialize and create FTP client
     res = initialize_ftp_client()
     if res is None:
         os._exit(1)
 
     from .benchmarking import benchmark
-    benchmark()
+    benchmark(graph_id=graph_id)
 
     g.logger.debug("")
     g.logger.debug("Ravpy is waiting for ops and subgraphs...")

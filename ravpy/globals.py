@@ -1,9 +1,20 @@
 import os
 import socketio
-from .config import RAVENVERSE_URL, TYPE, RAVENVERSE_FTP_URL
+from .config import RAVENVERSE_URL, TYPE, RAVENVERSE_FTP_URL, FTP_TEMP_FILES_FOLDER
 from .logger import get_logger
 from .singleton_utils import Singleton
 
+def exit_handler():
+    g.logger.debug('Application is Closing!')
+    if g.client is not None:
+        g.logger.debug("Disconnecting...")
+        if g.client.connected:
+            g.client.emit("disconnect", namespace="/client")
+
+    dir = FTP_TEMP_FILES_FOLDER
+    if os.path.exists(dir):
+        for f in os.listdir(dir):
+            os.remove(os.path.join(dir, f))
 
 def get_client(ravenverse_token):
     """
@@ -20,6 +31,12 @@ def get_client(ravenverse_token):
     def check_error(d):
         g.logger.error("Connection error:a{}".format(d))
         client.disconnect()
+        os._exit(1)
+
+    @client.on('invalid_graph', namespace='/client')
+    def invalid_graph(d):
+        g.logger.error("Invalid Graph error:{}".format(d))
+        exit_handler()
         os._exit(1)
 
     try:

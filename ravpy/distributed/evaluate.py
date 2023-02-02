@@ -189,7 +189,13 @@ def compute_subgraph_forward(d):
 def ping(d):
     global client
     g.ping_timeout_counter = 0
-    client.emit('pong', d, namespace='/client')
+    graph_status = d.get('graph_status',None)
+    if graph_status == "computed" or graph_status == "failed":
+        print("Graph Status is: ", graph_status)
+        exit_handler()
+        os._exit(1)
+    else:
+        client.emit('pong', d, namespace='/client')
 
 @g.client.on('redundant_subgraph', namespace="/client")
 def redundant_subgraph(d):
