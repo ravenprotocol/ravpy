@@ -19,3 +19,4 @@ pillow
 tinyaes
 pyinstaller[encryption]
 dmgbuild
+torch
