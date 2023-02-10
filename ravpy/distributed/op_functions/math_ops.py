@@ -505,8 +505,6 @@ def index(arr,params=None):#indices=None):
     if isinstance(arr, list) or isinstance(arr, np.ndarray):
         arr = torch.tensor(arr)
 
-    print("\n\nindex arr: ",arr, arr.shape)
-
     if indices is None:
         raise Exception("indices param is missing")
     indices = indices['indices']

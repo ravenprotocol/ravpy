@@ -28,8 +28,9 @@ pip install ravpy
 Create a .env file and add the following environment variables:
 
 ```bash
-RAVENVERSE_URL=http://0.0.0.0:9999
-RAVENVERSE_FTP_URL=0.0.0.0
+RAVENVERSE_URL=http://server.ravenverse.ai
+RAVENVERSE_FTP_HOST=server.ravenverse.ai
+RAVENVERSE_FTP_URL=server.ravenverse.ai
 ```
 
 Load environment variables at the beginning of your code using:
@@ -52,7 +53,7 @@ initialize(ravenverse_token = '<token>')
 ### Participate in Distributed Computing
 
 ```python
-from ravpy.distributed.participate import participate
+from ravpy import participate
 
 participate()
 ```
