@@ -5,7 +5,7 @@ import sys
 from .globals import g
 
 from .utils import isLatestVersion
-from .config import FTP_TEMP_FILES_FOLDER
+from .config import FTP_TEMP_FILES_FOLDER, FTP_DOWNLOAD_FILES_FOLDER
 
 
 def exit_handler():
@@ -25,6 +25,21 @@ atexit.register(exit_handler)
 
 
 def initialize(ravenverse_token):
+    dir = FTP_TEMP_FILES_FOLDER
+    if os.path.exists(dir):
+        for f in os.listdir(dir):
+            os.remove(os.path.join(dir, f))
+    dir = FTP_DOWNLOAD_FILES_FOLDER
+    if os.path.exists(dir):
+        for f in os.listdir(dir):
+            os.remove(os.path.join(dir, f))
+
+    dir = os.getcwd()
+    if os.path.exists(dir):
+        for f in os.listdir(dir):
+            if f.endswith(".zip") and "local_" in f:
+                os.remove(os.path.join(dir, f))
+
     g.logger.debug("Checking Version of Ravpy...")
 
     if not isLatestVersion('ravpy'):

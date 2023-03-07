@@ -1,4 +1,5 @@
 import os
+from tqdm import tqdm
 import socket
 from ftplib import FTP
 
@@ -19,7 +20,7 @@ class FTPClient:
         self.ftp.login(user, passwd)
         self.ftp.set_pasv(True)
 
-    def download(self, filename, path):
+    def download(self, filename, path, filesize):
         try:
             sock = socket.create_connection(('8.8.8.8',53))
             sock.close()
@@ -30,7 +31,11 @@ class FTPClient:
                 
         try:
             with open(filename, 'wb') as f:
-                self.ftp.retrbinary('RETR ' + path, f.write, blocksize=g.ftp_download_blocksize)
+                with tqdm(unit = 'b', unit_scale = True, leave = False, miniters = 1, desc = 'Downloading Data', total = filesize) as tqdm_instance:
+                    def callback_fn(sent):
+                        f.write(sent)
+                        tqdm_instance.update(len(sent))
+                    self.ftp.retrbinary('RETR ' + path, callback_fn, blocksize=g.ftp_download_blocksize)
         except Exception as e:
             exit_handler()
             os._exit(1)
@@ -49,8 +54,9 @@ class FTPClient:
 
         try:
             with open(filename, 'rb') as f:
-                # self.ftp.storbinary('STOR ' + path, f, blocksize=g.ftp_upload_blocksize)
-                self.storbinary('STOR ' + path, f, blocksize=g.ftp_upload_blocksize)
+                filesize = os.path.getsize(filename)
+                with tqdm(unit = 'b', unit_scale = True, leave = False, miniters = 1, desc = 'Uploading Data', total = filesize) as tqdm_instance:
+                    self.storbinary('STOR ' + path, f, blocksize=g.ftp_upload_blocksize, callback=lambda sent: tqdm_instance.update(len(sent)))
         except Exception as e:
             exit_handler()
             os._exit(1)

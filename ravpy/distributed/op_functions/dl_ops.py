@@ -619,12 +619,72 @@ def forward_pass_embedding(X, params=None):
                 emb.weight.data = torch.tensor(initial_W, dtype=torch.float32)
 
         if optimizer_dict is not None:
+            optimizer = get_optimizer(emb, **optimizer_dict)
             optimizer = torch.optim.Adam(emb.parameters(), lr=optimizer_dict['lr'], betas=optimizer_dict['betas'], eps=optimizer_dict['eps'], weight_decay=optimizer_dict['weight_decay'], amsgrad=optimizer_dict['amsgrad'])
         
         result = emb(X.type(torch.int64))
         forward_pass_output = {
             'result': result,
             'instance': emb,
+            'optimizer': optimizer
+        }
+        return forward_pass_output
+
+def forward_pass(X, params=None):
+    model = params.get('model', None)
+    optimizer_dict = params.get('optimizer_dict', None)
+    previous_batch_layer_data = params.get('previous_batch_layer_data', None)    
+    previous_forward_pass_instance = params.get('previous_forward_pass', None)
+    model_jit = params.get('model_jit', None)
+    training = params.get('training',True)
+
+    temp_params = params
+    essential_keys = ['model', 'optimizer_dict', 'previous_batch_layer_data', 'previous_forward_pass', 'model_jit', 'training']
+    for key in essential_keys:
+        if key in temp_params.keys():
+            del temp_params[key]
+
+    for key, val in temp_params.items():
+        if isinstance(val, list) or isinstance(val, np.ndarray):
+            temp_params[key] = torch.tensor(val)
+
+    if isinstance(X, dict):
+        X = X['result']
+    if isinstance(X, list) or isinstance(X, np.ndarray):
+        X = torch.tensor(X)
+    if previous_forward_pass_instance is not None:
+        model = previous_forward_pass_instance['instance']
+        # optimizer = previous_forward_pass_instance['optimizer']
+        X1 = X#.to(torch.float32)
+        if not training:
+            model.eval()
+        result = model(X1, **temp_params)
+        forward_pass_output = {
+            'result': result
+        }
+        return forward_pass_output
+    else:
+        optimizer = None
+        if previous_batch_layer_data is not None:
+            model = model_jit #previous_batch_layer_data['instance']
+            if 'optimizer' in previous_batch_layer_data:
+                optimizer = previous_batch_layer_data['optimizer']
+        elif model is not None:
+            model = model
+
+        if optimizer_dict is not None:
+            optimizer = get_optimizer(model, **optimizer_dict)
+        
+        X1 = X#.to(torch.double)
+
+        if not training:
+            # print("\n Eval mode set")
+            model.eval()
+        result = model(X1, **temp_params)
+
+        forward_pass_output = {
+            'result': result,
+            'instance': model,
             'optimizer': optimizer
         }
         return forward_pass_output

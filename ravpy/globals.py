@@ -1,9 +1,20 @@
 import os
 import socketio
-from .config import RAVENVERSE_URL, TYPE, RAVENVERSE_FTP_URL
+from .config import RAVENVERSE_URL, TYPE, RAVENVERSE_FTP_URL, FTP_TEMP_FILES_FOLDER
 from .logger import get_logger
 from .singleton_utils import Singleton
 
+def exit_handler():
+    g.logger.debug('Application is Closing!')
+    if g.client is not None:
+        g.logger.debug("Disconnecting...")
+        if g.client.connected:
+            g.client.emit("disconnect", namespace="/client")
+
+    dir = FTP_TEMP_FILES_FOLDER
+    if os.path.exists(dir):
+        for f in os.listdir(dir):
+            os.remove(os.path.join(dir, f))
 
 def get_client(ravenverse_token):
     """
@@ -20,6 +31,12 @@ def get_client(ravenverse_token):
     def check_error(d):
         g.logger.error("Connection error:a{}".format(d))
         client.disconnect()
+        os._exit(1)
+
+    @client.on('invalid_graph', namespace='/client')
+    def invalid_graph(d):
+        g.logger.error("Invalid Graph error:{}".format(d))
+        exit_handler()
         os._exit(1)
 
     try:
@@ -54,7 +71,9 @@ class Globals(object):
         self._is_uploading = False
         self._noop_counter = 0
         self._ftp_upload_blocksize = 8192
+        self._upload_speed = 0
         self._ftp_download_blocksize = 8192
+        self._download_speed = 0
         self._ping_timeout_counter = 0
         self._error = False
         self._ravenverse_token = None
@@ -98,6 +117,22 @@ class Globals(object):
     @ftp_download_blocksize.setter
     def ftp_download_blocksize(self, ftp_download_blocksize):
         self._ftp_download_blocksize = ftp_download_blocksize
+
+    @property
+    def upload_speed(self):
+        return self._upload_speed
+
+    @upload_speed.setter
+    def upload_speed(self, upload_speed):
+        self._upload_speed = upload_speed
+
+    @property
+    def download_speed(self):
+        return self._download_speed
+
+    @download_speed.setter
+    def download_speed(self, download_speed):
+        self._download_speed = download_speed
 
     @ops.setter
     def ops(self, ops):
