@@ -90,7 +90,6 @@ def compute_subgraph_forward(d):
                     loss.backward(retain_graph=True)
 
             if step:
-                # print("Step called!!")
                 for key in g.forward_computations.keys():
                     op_result = g.forward_computations[key]
                     if isinstance(op_result, dict):
@@ -134,74 +133,43 @@ def compute_subgraph_forward(d):
 
                     results_dict['result'] = g.forward_computations[index['op_id']]['result']
 
-                    if index['operator'] == 'forward_pass':
-                        model_path = dump_torch_model(index['op_id'], results_dict['instance'])
-                        del results_dict['instance']
-
-                        if index['op_id'] not in persist_forward_pass_results_list:
-                            del results_dict['result']
-                        
-                        file_path = dump_data(index['op_id'], results_dict)
-                        dumped_result = json.dumps({
-                            'model_file_name': os.path.basename(model_path),
-                            'file_name': os.path.basename(file_path),
-                            "op_id": index['op_id'],
-                            "status": "success"
-                        })
-                        optimized_results_list.append(dumped_result)  
-                    else:
-                        if 'forward_pass' in index["operator"]:
-                            if index['op_id'] not in persist_forward_pass_results_list:
-                                del results_dict['result']
-                        
-                        file_path = dump_data(index['op_id'], results_dict)
-                        dumped_result = json.dumps({
-                            'file_name': os.path.basename(file_path),
-                            "op_id": index['op_id'],
-                            "status": "success"
-                        })
-                        optimized_results_list.append(dumped_result)     
-                    # print("\n Results dict: ", results_dict)           
                 else:
                     results_dict = g.forward_computations[index['op_id']]
 
-                    if index['operator'] == 'forward_pass':
-                        model_path = dump_torch_model(index['op_id'], results_dict['instance'])
-                        del results_dict['instance']
+                if index['operator'] == 'forward_pass':
+                    model_path = dump_torch_model(index['op_id'], results_dict['instance'])
+                    del results_dict['instance']
 
+                    if index['op_id'] not in persist_forward_pass_results_list:
+                        del results_dict['result']
+                    
+                    file_path = dump_data(index['op_id'], results_dict)
+                    dumped_result = json.dumps({
+                        'model_file_name': os.path.basename(model_path),
+                        'file_name': os.path.basename(file_path),
+                        "op_id": index['op_id'],
+                        "status": "success"
+                    })
+                    optimized_results_list.append(dumped_result) 
+                else:
+                    if 'forward_pass' in index["operator"]:
                         if index['op_id'] not in persist_forward_pass_results_list:
                             del results_dict['result']
-                        
-                        file_path = dump_data(index['op_id'], results_dict)
-                        dumped_result = json.dumps({
-                            'model_file_name': os.path.basename(model_path),
-                            'file_name': os.path.basename(file_path),
-                            "op_id": index['op_id'],
-                            "status": "success"
-                        })
-                        optimized_results_list.append(dumped_result) 
-                    else:
-                        if 'forward_pass' in index["operator"]:
-                            if index['op_id'] not in persist_forward_pass_results_list:
-                                del results_dict['result']
 
-                        file_path = dump_data(index['op_id'], results_dict)
-                        dumped_result = json.dumps({
-                            'file_name': os.path.basename(file_path),
-                            "op_id": index['op_id'],
-                            "status": "success"
-                        })
-                        optimized_results_list.append(dumped_result)
-                    # print("\n Results dict: ", results_dict)           
+                    file_path = dump_data(index['op_id'], results_dict)
+                    dumped_result = json.dumps({
+                        'file_name': os.path.basename(file_path),
+                        "op_id": index['op_id'],
+                        "status": "success"
+                    })
+                    optimized_results_list.append(dumped_result)
 
-        # print("\n Optimized Results list: ", optimized_results_list)
         optimized_results_list.extend(results) 
         results = optimized_results_list       
 
         for temp_file in os.listdir(FTP_TEMP_FILES_FOLDER):
-            if 'temp_' in temp_file: #and '.pkl' in temp_file:
+            if 'temp_' in temp_file:
                 file_path = os.path.join(FTP_TEMP_FILES_FOLDER, temp_file)
-                # print("\n Writing to zip: ", file_path, os.path.getsize(file_path))
                 with ZipFile('local_{}_{}.zip'.format(subgraph_id, graph_id), 'a') as zipObj2:
                     zipObj2.write(file_path, os.path.basename(file_path))
                 os.remove(file_path)

@@ -1,9 +1,7 @@
 import atexit
 import os
-import sys
 
 from .globals import g
-
 from .utils import isLatestVersion
 from .config import FTP_TEMP_FILES_FOLDER, FTP_DOWNLOAD_FILES_FOLDER
 
