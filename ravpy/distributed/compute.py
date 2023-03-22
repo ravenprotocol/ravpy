@@ -11,28 +11,6 @@ from ..strings import functions
 from ..utils import get_key, load_data, load_data_raw
 from .op_functions import *
 
-
-def compute_locally_bm(*args, **kwargs):
-    operator = kwargs.get("operator", None)
-    op_type = kwargs.get("op_type", None)
-    if op_type == "unary":
-        value1 = args[0]
-        params = {}
-        t1 = time.time()
-        bm_result = get_unary_result(value1['value'], params, operator)
-        t2 = time.time()
-        return t2 - t1
-
-    elif op_type == "binary":
-        value1 = args[0]['value']
-        value2 = args[1]['value']
-        params = {}
-        t1 = time.time()
-        bm_result = get_binary_result(value1, value2, params, operator)
-        t2 = time.time()
-        return t2 - t1
-
-
 # async
 def compute_locally(payload, subgraph_id, graph_id, to_upload=False):
     try:
@@ -83,10 +61,23 @@ def compute_locally(payload, subgraph_id, graph_id, to_upload=False):
                     params_dict[i] = previous_instance
                 elif 'value' in params[i].keys():
                     download_path = os.path.join(FTP_DOWNLOAD_FILES_FOLDER,
-                                                    os.path.basename(params[i]['path']))
+                                                        os.path.basename(params[i]['path']))
                     previous_instance = load_data_raw(download_path)
                     params_dict['previous_batch_layer_data'] = previous_instance
+
+                    if payload['operator'] == "forward_pass" and 'model_path' in params[i].keys():
+                        model_download_path = os.path.join(FTP_DOWNLOAD_FILES_FOLDER,
+                                                        os.path.basename(params[i]['model_path']))
+                        model_jit = torch.jit.load(model_download_path)
+                        params_dict['model_jit'] = model_jit
         
+                continue
+
+            if i == "model":
+                download_path = os.path.join(FTP_DOWNLOAD_FILES_FOLDER,
+                                                    os.path.basename(params[i]["path"]))
+                param_value = torch.jit.load(download_path)
+                params_dict[i] = param_value
                 continue
 
             if type(params[i]) == str:
@@ -264,6 +255,9 @@ def  get_unary_result(value1, params, operator):
         result = forward_pass_transpose(value1, params=params)
     elif operator == "forward_pass_power":
         result = forward_pass_power(value1, params= params)
+
+    elif operator == "forward_pass":
+        result = forward_pass(value1, params= params)
     return result
 
 

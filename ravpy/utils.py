@@ -3,6 +3,9 @@ import os
 import pickle as pkl
 import speedtest
 import time
+import torch
+import psutil
+import GPUtil
 
 from .config import ENCRYPTION, RAVENVERSE_FTP_URL, RAVENAUTH_TOKEN_VERIFY_URL
 
@@ -125,7 +128,7 @@ def get_federated_graph(graph_id):
     return None
 
 
-def list_graphs(approach=None):
+def list_graphs(approach="distributed"):
     # Get graphs
     headers = {"token": g.ravenverse_token}
     r = requests.get(url="{}/graph/get/all/?approach={}".format(RAVENVERSE_URL, approach), headers=headers)
@@ -134,10 +137,14 @@ def list_graphs(approach=None):
 
     graphs = r.json()
     g.logger.debug(AsciiTable([["{} Graphs".format(approach)]]).table)
-    table_data = [["Id", "Name", "Approach", "Algorithm", "Rules"]]
+    table_data = [["Id", "Name", "Approach", "Algorithm", "Active Participants", "Required Participants", "System Requirements", "Minimum Stake Required", "Rules"]]
 
     for graph in graphs:
-        table_data.append([graph['id'], graph['name'], graph['approach'], graph['algorithm'], graph['rules']])
+        sys_reqs = ast.literal_eval(graph['system_requirements'])
+        sys_reqs['total_RAM'] = str(sys_reqs['total_RAM']) + ' GB'
+        sys_reqs['upload_speed'] = str(round(sys_reqs['upload_speed']) * 1e-6) + " Mbps"
+        sys_reqs['download_speed'] = str(round(sys_reqs['download_speed']) * 1e-6) + " Mbps"
+        table_data.append([graph['id'], graph['name'], graph['approach'], graph['algorithm'], graph['active_participants'], graph['required_participants'], sys_reqs, graph['min_stake_required'], graph['rules']])
 
     g.logger.debug(AsciiTable(table_data).table)
 
@@ -213,6 +220,18 @@ def dump_data(op_id, value):
         pkl.dump(value, f, protocol=pkl.HIGHEST_PROTOCOL)
     return file_path
 
+def dump_torch_model(op_id, model):
+    """
+    Dump ndarray to file
+    """
+    file_path = os.path.join(FTP_TEMP_FILES_FOLDER, "temp_{}.pt".format(op_id))
+    if os.path.exists(file_path):
+        os.remove(file_path)
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    model_script = torch.jit.script(model)
+
+    model_script.save(file_path)
+    return file_path
 
 def load_data(path):
     """
@@ -249,6 +268,9 @@ def initialize_ftp_client():
             download_speed = int(wifi.download())
             upload_speed = upload_speed / 8
             download_speed = download_speed / 8
+            g.upload_speed = upload_speed
+            g.download_speed = download_speed
+
             if upload_speed <= 3000000:
                 upload_multiplier = 1
             elif upload_speed < 80000000:
@@ -267,6 +289,8 @@ def initialize_ftp_client():
             g.ftp_download_blocksize = 8192 * download_multiplier
 
         else:
+            g.upload_speed = 100000000
+            g.download_speed = 100000000
             g.ftp_upload_blocksize = 8192 * 1000
             g.ftp_download_blocksize = 8192 * 1000
 
@@ -307,3 +331,21 @@ def disconnect():
             g.logger.debug("Disconnected")
 
     return True
+
+def get_total_RAM():
+    """
+    Scale bytes to its proper format
+    e.g:
+        1253656 => '1.20MB'
+        1253656678 => '1.17GB'
+    """
+    svmem = psutil.virtual_memory()
+    bytes = svmem.total
+    factor = 1024
+    for unit in ["", "K", "M", "G", "T", "P"]:
+        if bytes < factor:
+            return bytes #f"{bytes:.2f}{unit}{suffix}"
+        bytes /= factor
+
+def check_gpu():
+    return str(torch.cuda.is_available())

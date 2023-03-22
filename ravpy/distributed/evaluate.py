@@ -2,12 +2,13 @@ import json
 import os
 import sys
 import socket
+import ast
 from terminaltables import AsciiTable
 from zipfile import ZipFile
 from .compute import compute_locally, emit_error
 from ..config import FTP_DOWNLOAD_FILES_FOLDER, FTP_TEMP_FILES_FOLDER
 from ..globals import g
-from ..utils import setTimeout, stopTimer, dump_data
+from ..utils import setTimeout, stopTimer, dump_data, dump_torch_model
 
 timeoutId = g.timeoutId
 opTimeout = g.opTimeout
@@ -29,6 +30,7 @@ def compute_subgraph_forward(d):
     data = d["payloads"]
 
     subgraph_outputs = d["subgraph_outputs_list"]
+    persist_forward_pass_results_list = d["persist_forward_pass_results"]
 
     subgraph_zip_file_flag = d["subgraph_zip_file_flag"]
     results = []
@@ -38,10 +40,10 @@ def compute_subgraph_forward(d):
         server_file_path = 'zip_{}_{}.zip'.format(subgraph_id, graph_id)
 
         download_path = os.path.join(FTP_DOWNLOAD_FILES_FOLDER, server_file_path)
-
+        filesize = d['zip_file_size']
         try:
             g.ftp_client.ftp.voidcmd('NOOP')
-            g.ftp_client.download(download_path, os.path.basename(server_file_path))
+            g.ftp_client.download(download_path, os.path.basename(server_file_path), filesize)
 
         except Exception as error:
             os.system('clear')
@@ -80,24 +82,22 @@ def compute_subgraph_forward(d):
         operation_type = index["op_type"]
         operator = index["operator"]
         if operator == "start_backward_marker":
-            for key in g.forward_computations.keys():
-                op_result = g.forward_computations[key]
-                if isinstance(op_result, dict):
-                    op_optimizer = op_result.get('optimizer', None)
-                    if op_optimizer is not None:
-                        op_optimizer.zero_grad()
-
+            marker_params = index["params"]
+            step = ast.literal_eval(marker_params.get("step", "True"))
             for input_value in index["values"]:
                 if "op_id" in input_value:
                     loss = g.forward_computations[input_value['op_id']]
                     loss.backward(retain_graph=True)
 
-            for key in g.forward_computations.keys():
-                op_result = g.forward_computations[key]
-                if isinstance(op_result, dict):
-                    op_optimizer = op_result.get('optimizer', None)
-                    if op_optimizer is not None:
-                        op_optimizer.step()
+            if step:
+                for key in g.forward_computations.keys():
+                    op_result = g.forward_computations[key]
+                    if isinstance(op_result, dict):
+                        op_optimizer = op_result.get('optimizer', None)
+                        if op_optimizer is not None:
+                            op_optimizer.step()
+                            op_optimizer.zero_grad()
+                            op_result['optimizer'] = op_optimizer
 
             results.append(json.dumps({
                 'operator': operator,
@@ -132,15 +132,30 @@ def compute_subgraph_forward(d):
                         results_dict['optimizer'] = g.forward_computations[previous_instance_id]['optimizer']
 
                     results_dict['result'] = g.forward_computations[index['op_id']]['result']
+
+                else:
+                    results_dict = g.forward_computations[index['op_id']]
+
+                if index['operator'] == 'forward_pass':
+                    model_path = dump_torch_model(index['op_id'], results_dict['instance'])
+                    del results_dict['instance']
+
+                    if index['op_id'] not in persist_forward_pass_results_list:
+                        del results_dict['result']
+                    
                     file_path = dump_data(index['op_id'], results_dict)
                     dumped_result = json.dumps({
+                        'model_file_name': os.path.basename(model_path),
                         'file_name': os.path.basename(file_path),
                         "op_id": index['op_id'],
                         "status": "success"
                     })
-                    optimized_results_list.append(dumped_result)                
+                    optimized_results_list.append(dumped_result) 
                 else:
-                    results_dict = g.forward_computations[index['op_id']]
+                    if 'forward_pass' in index["operator"]:
+                        if index['op_id'] not in persist_forward_pass_results_list:
+                            del results_dict['result']
+
                     file_path = dump_data(index['op_id'], results_dict)
                     dumped_result = json.dumps({
                         'file_name': os.path.basename(file_path),
@@ -153,7 +168,7 @@ def compute_subgraph_forward(d):
         results = optimized_results_list       
 
         for temp_file in os.listdir(FTP_TEMP_FILES_FOLDER):
-            if 'temp_' in temp_file and '.pkl' in temp_file:
+            if 'temp_' in temp_file:
                 file_path = os.path.join(FTP_TEMP_FILES_FOLDER, temp_file)
                 with ZipFile('local_{}_{}.zip'.format(subgraph_id, graph_id), 'a') as zipObj2:
                     zipObj2.write(file_path, os.path.basename(file_path))
@@ -189,7 +204,13 @@ def compute_subgraph_forward(d):
 def ping(d):
     global client
     g.ping_timeout_counter = 0
-    client.emit('pong', d, namespace='/client')
+    client_conn = d.get('client_conn',None)
+    if client_conn == "disconnect":
+        print("You have computed your share of subgraphs for this Graph, disconnecting...")
+        exit_handler()
+        os._exit(1)
+    else:
+        client.emit('pong', d, namespace='/client')
 
 @g.client.on('redundant_subgraph', namespace="/client")
 def redundant_subgraph(d):

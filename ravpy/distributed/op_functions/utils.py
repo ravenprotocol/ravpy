@@ -48,6 +48,8 @@ def get_optimizer(model, **kwargs):
         return torch.optim.Adadelta(model.parameters(), **kwargs)
     elif optimizer == 'adam':
         return torch.optim.Adam(model.parameters(), **kwargs)
+    elif optimizer == 'adamw':
+        return torch.optim.AdamW(model.parameters(), **kwargs)
     elif optimizer == 'adamax':
         return torch.optim.Adamax(model.parameters(), **kwargs)
     elif optimizer == 'rmsprop':

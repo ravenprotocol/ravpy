@@ -51,14 +51,24 @@ initialize(ravenverse_token = '<token>')
 ```
 
 ### Participate in Distributed Computing
+A Provider can choose which graph to participate in. In order to list which graphs are available, the following command can be used:
+
+```python
+from ravpy.utils import list_graphs
+
+list_graphs(approach="distributed")
+```
+
+This command displays a list of executed graphs along with the minimum requirements to participate in their computation, including system requirements and minimum stake required. A provider can participate in a graph only if their system meets these requirements and they have sufficient tokens in their account to meet the minimum stake amount.<br><br>
+The following command can be run to participate in a graph (the Provider must note the id of the graph they wish to participate in):
 
 ```python
 from ravpy import participate
 
-participate()
+participate(graph_id=1)
 ```
 
-Upon participation, the Provider will be assigned a subgraph to execute. Once executed, the results will be sent to the Ravsock server.
+Upon participation, the Provider will be assigned a number of subgraphs to execute. Once they have been executed, the results will be sent to the Ravsock server. The full staked amount will be returned along with their earnings on successful computation of all assigned graphs. <br>However if the provider disconnects before the computation of their share of subgraphs, a portion of the staked amount will be deducted.
 
 ![provider](https://user-images.githubusercontent.com/36446402/190107295-d1c0fb74-d894-4fea-b1d3-5354352d4f84.gif)
 
