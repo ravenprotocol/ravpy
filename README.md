@@ -24,6 +24,8 @@ pip install ravpy
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 ## Usage
 
+This section details how to join Ravenverse as a Provider. The relevant scripts are available in the [Ravenverse Repository](https://github.com/ravenprotocol/ravenverse). It is recommended to clone the Ravenverse repo and navigate to the ```Provider``` folder, where scripts for following steps are available.
+
 ### Setting Environment Variables
 Create a .env file and add the following environment variables:
 
@@ -66,7 +68,7 @@ This command displays a list of executed graphs along with the minimum requireme
 The following command can be run to participate in a graph (the Provider must note the id of the graph they wish to participate in):
 
 ```python
-from ravpy import participate
+from ravpy.distributed.participate import participate
 
 participate(graph_id=1)
 ```
