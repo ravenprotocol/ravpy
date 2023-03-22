@@ -42,7 +42,7 @@ def isLatestVersion(pkgName):
     latest_version = data['info']['version']
     # print(‘Current version of ‘+pkgName+’ is ’+current_version)
     # print(‘Latest version of ‘+pkgName+’ is ’+latest_version)
-    return latest_version == current_version
+    return latest_version <= current_version
 
 def download_file(url, file_name):
     g.logger.debug("Downloading benchmark data")
