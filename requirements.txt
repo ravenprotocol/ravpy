@@ -20,3 +20,5 @@ tinyaes
 pyinstaller[encryption]
 dmgbuild
 torch
+gputil
+tqdm

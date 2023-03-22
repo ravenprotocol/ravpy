@@ -36,7 +36,9 @@ setup(
         'scipy',
         'pillow',
         'tinyaes',
-        'torch'
+        'torch',
+        'gputil',
+        'tqdm'
     ],
     app=["gui.py"],
     setup_requires=["py2app"],
