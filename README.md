@@ -59,6 +59,9 @@ from ravpy.utils import list_graphs
 list_graphs(approach="distributed")
 ```
 
+<img width="1423" alt="Screenshot 2023-03-22 at 11 22 44 AM" src="https://user-images.githubusercontent.com/36446402/226816986-d28fbacb-aed6-4113-b808-43d0153f9521.png">
+
+
 This command displays a list of executed graphs along with the minimum requirements to participate in their computation, including system requirements and minimum stake required. A provider can participate in a graph only if their system meets these requirements and they have sufficient tokens in their account to meet the minimum stake amount.<br><br>
 The following command can be run to participate in a graph (the Provider must note the id of the graph they wish to participate in):
 
@@ -70,7 +73,8 @@ participate(graph_id=1)
 
 Upon participation, the Provider will be assigned a number of subgraphs to execute. Once they have been executed, the results will be sent to the Ravsock server. The full staked amount will be returned along with their earnings on successful computation of all assigned graphs. <br>However if the provider disconnects before the computation of their share of subgraphs, a portion of the staked amount will be deducted.
 
-![provider](https://user-images.githubusercontent.com/36446402/190107295-d1c0fb74-d894-4fea-b1d3-5354352d4f84.gif)
+![ezgif com-optimize](https://user-images.githubusercontent.com/36446402/226816757-6381583b-9dc1-4af5-b3e5-9d3886ab8ff3.gif)
+
 
 ### Participate in Federated Analytics
 
