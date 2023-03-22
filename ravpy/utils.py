@@ -141,6 +141,7 @@ def list_graphs(approach="distributed"):
 
     for graph in graphs:
         sys_reqs = ast.literal_eval(graph['system_requirements'])
+        del sys_reqs['gpu_required']
         sys_reqs['total_RAM'] = str(sys_reqs['total_RAM']) + ' GB'
         sys_reqs['upload_speed'] = str(round(sys_reqs['upload_speed']) * 1e-6) + " Mbps"
         sys_reqs['download_speed'] = str(round(sys_reqs['download_speed']) * 1e-6) + " Mbps"
