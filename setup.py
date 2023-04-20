@@ -17,7 +17,7 @@ setup(
     url='https://github.com/ravenprotocol/ravpy',
     keywords='Ravpy, python client library for providers',
     install_requires=[
-        "numpy==1.21.5",
+        "numpy",
         "pandas==1.3.5",
         "pyftpdlib==1.5.6",
         "python-engineio==4.2.1",
@@ -38,7 +38,8 @@ setup(
         'tinyaes',
         'torch',
         'gputil',
-        'tqdm'
+        'tqdm',
+        'aiohttp'
     ],
     app=["gui.py"],
     setup_requires=["py2app"],
