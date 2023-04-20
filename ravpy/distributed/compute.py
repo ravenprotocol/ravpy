@@ -12,7 +12,7 @@ from ..utils import get_key, load_data, load_data_raw
 from .op_functions import *
 
 # async
-def compute_locally(payload, subgraph_id, graph_id, to_upload=False):
+def compute_locally(payload, subgraph_id, graph_id, forward_computations, to_upload=False, gpu_required=False):
     try:
         values = []
         for i in range(len(payload["values"])):
@@ -32,10 +32,11 @@ def compute_locally(payload, subgraph_id, graph_id, to_upload=False):
                         value = torch.tensor(value)
 
                     values.append(value)
+                    del value
 
             elif "op_id" in payload["values"][i].keys():
-                values.append(g.forward_computations[payload['values'][i]['op_id']])
-                
+                values.append(forward_computations[payload['values'][i]['op_id']])
+
         payload["values"] = values
 
         op_type = payload["op_type"]
@@ -49,17 +50,24 @@ def compute_locally(payload, subgraph_id, graph_id, to_upload=False):
             instance_dict = load_data_raw(download_path)
             instance = instance_dict.get('instance', None)
             optimizer = instance_dict.get('optimizer', None)
+            del instance_dict
 
         params['instance'] = instance
         params['optimizer'] = optimizer
 
         params_dict = {}
+
+        device = 'cpu'
+        if gpu_required:
+            device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        params_dict["device"] = device
+
         for i in params.keys():
             if i == "previous_forward_pass":
                 if 'op_id' in params[i].keys():
-                    previous_instance = g.forward_computations[params[i]['op_id']]
-                    params_dict[i] = previous_instance
+                    params_dict[i] = forward_computations[params[i]['op_id']]
                 elif 'value' in params[i].keys():
+
                     download_path = os.path.join(FTP_DOWNLOAD_FILES_FOLDER,
                                                         os.path.basename(params[i]['path']))
                     previous_instance = load_data_raw(download_path)
@@ -68,16 +76,14 @@ def compute_locally(payload, subgraph_id, graph_id, to_upload=False):
                     if payload['operator'] == "forward_pass" and 'model_path' in params[i].keys():
                         model_download_path = os.path.join(FTP_DOWNLOAD_FILES_FOLDER,
                                                         os.path.basename(params[i]['model_path']))
-                        model_jit = torch.jit.load(model_download_path)
-                        params_dict['model_jit'] = model_jit
+                        params_dict['model_jit'] = torch.jit.load(model_download_path, map_location=device, _restore_shapes=True)
         
                 continue
 
             if i == "model":
                 download_path = os.path.join(FTP_DOWNLOAD_FILES_FOLDER,
                                                     os.path.basename(params[i]["path"]))
-                param_value = torch.jit.load(download_path)
-                params_dict[i] = param_value
+                params_dict[i] = torch.jit.load(download_path, map_location=device, _restore_shapes=True)
                 continue
 
             if type(params[i]) == str:
@@ -90,34 +96,48 @@ def compute_locally(payload, subgraph_id, graph_id, to_upload=False):
             elif type(params[i]) == dict:
                 if 'op_id' in params[i].keys():
                     op_id = params[i]["op_id"]
-                    param_value = g.forward_computations[op_id].numpy().tolist()
+                    param_value = forward_computations[op_id].numpy().tolist()
                 elif 'value' in params[i].keys():
                     download_path = os.path.join(FTP_DOWNLOAD_FILES_FOLDER,
                                                     os.path.basename(params[i]["path"]))
                     param_value = load_data(download_path).tolist()
                 
                 params_dict[i] = param_value
+                del param_value
 
         if op_type == "unary":
             val_1 = payload["values"][0]
             result = get_unary_result(val_1, params_dict, operator)
+            del val_1
 
         elif op_type == "binary":
             val_1 = payload["values"][0]
             val_2 = payload["values"][1]
             result = get_binary_result(val_1, val_2, params_dict, operator)
+            del val_1
+            del val_2
 
-        g.forward_computations[payload['op_id']] = result
-                
+        forward_computations[payload['op_id']] = result
+
+        del params_dict
+        del params
+        del result
+        del values
+        del instance
+        del optimizer
+
+        if gpu_required:
+            torch.cuda.empty_cache()
+
         if not to_upload:
             return json.dumps({
                 'op_type': payload["op_type"],
                 'operator': payload["operator"],
                 "op_id": payload["op_id"],
                 "status": "success"
-            })
+            }), forward_computations
         else:
-            return None
+            return None, forward_computations
 
     except Exception as error:
         os.system('clear')
@@ -394,9 +414,7 @@ def emit_error(payload, error, subgraph_id, graph_id):
             g.ftp_client.delete_file(ftp_file)
     except Exception as e:
         g.delete_files_list = []
-        g.outputs = {}
         g.has_subgraph = False
 
     g.delete_files_list = []
-    g.outputs = {}
     g.has_subgraph = False
