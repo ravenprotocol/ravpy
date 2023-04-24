@@ -42,16 +42,6 @@ from dotenv import load_dotenv
 load_dotenv()
 ```
 
-### Authentication
-
-The Provider must connect to the Ravenverse using a unique token that they can generate by logging in on the Ravenverse Website using their MetaMask wallet credentials.   
-
-```python
-from ravpy.initialize import initialize
-
-initialize(ravenverse_token = '<token>')
-```
-
 ### Participate in Distributed Computing
 A Provider can choose which graph to participate in. In order to list which graphs are available, the following command can be used:
 
@@ -70,7 +60,7 @@ The following command can be run to participate in a graph (the Provider must no
 ```python
 from ravpy.distributed.participate import participate
 
-participate(graph_id=1)
+participate(token='<token>',graph_id=4)
 ```
 
 Upon participation, the Provider will be assigned a number of subgraphs to execute. Once they have been executed, the results will be sent to the Ravsock server. The full staked amount will be returned along with their earnings on successful computation of all assigned graphs. <br>However if the provider disconnects before the computation of their share of subgraphs, a portion of the staked amount will be deducted.

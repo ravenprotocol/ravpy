@@ -1,29 +1,43 @@
 import torch
 import numpy as np
 from .utils import get_activation_layer, get_optimizer
-
+import subprocess as sp
+import time
 
 def square_loss(y, y_pred, params=None):
+    device = params.get("device", "cpu")
+
     if isinstance(y_pred, dict):
         y_pred = y_pred['result']
     if isinstance(y_pred, list) or isinstance(y_pred, np.ndarray):
         y_pred = torch.tensor(y_pred, requires_grad=True)
 
-    y = torch.tensor(np.array(y, dtype=np.float32))
+    y = torch.tensor(np.array(y, dtype=np.float32)).to(device=device)
+    y_pred = y_pred.to(device=device)
+    if 'cuda' in str(device):
+        torch.cuda.synchronize()
+
     mse_loss = torch.nn.functional.mse_loss(y_pred, y, reduction='mean')
+    
     return mse_loss
 
 def cross_entropy_loss(y, y_pred, params = None):
     ignore_index = params.get('ignore_index',None)
     reshape_target = params.get('reshape_target',None)
     reshape_label = params.get('reshape_label',None)
+    device = params.get("device", "cpu")
 
     if isinstance(y_pred, dict):
         y_pred = y_pred['result']
     if isinstance(y_pred, list) or isinstance(y_pred, np.ndarray):
-        y_pred = torch.tensor(y_pred, requires_grad=True)
+        y_pred = torch.tensor(y_pred)#, requires_grad=True)
 
-    y = torch.tensor(np.array(y))
+    y = torch.tensor(np.array(y)).to(device=device)
+    # if y_pred.get_device() == -1 and device != "cpu":
+    y_pred = y_pred.to(device=device)
+
+    if 'cuda' in str(device):
+        torch.cuda.synchronize()
 
     if ignore_index is not None:
         if reshape_target is not None and reshape_label is None:
@@ -54,6 +68,7 @@ def forward_pass_dense(X, params=None):
     optimizer_dict = params.get('optimizer_dict', None)
     previous_batch_layer_data = params.get('previous_batch_layer_data', None)    
     previous_forward_pass_instance = params.get('previous_forward_pass', None)
+    device = params.get("device", "cpu")
 
     if isinstance(X, dict):
         X = X['result']
@@ -63,7 +78,8 @@ def forward_pass_dense(X, params=None):
     if previous_forward_pass_instance is not None:
         lin = previous_forward_pass_instance['instance']
         optimizer = previous_forward_pass_instance['optimizer']
-        X1 = X.to(torch.float32)
+        X1 = X.to(dtype=torch.float32,device=device)
+        lin.to(device=device)
         result = lin(X1)
         forward_pass_output = {
             'result': result
@@ -81,11 +97,11 @@ def forward_pass_dense(X, params=None):
                 lin.weight.data = torch.tensor(initial_W, dtype=torch.float32)
             if initial_w0 is not None:
                 lin.bias.data = torch.tensor(initial_w0, dtype=torch.float32)
-
+        lin.to(device=device)
         if optimizer_dict is not None:
             optimizer = get_optimizer(lin, **optimizer_dict)
         
-        X1 = X.to(torch.float32)
+        X1 = X.to(dtype=torch.float32,device=device)
         result = lin(X1)
         forward_pass_output = {
             'result': result,
@@ -106,15 +122,19 @@ def forward_pass_batchnorm1d(X, params=None):
     optimizer_dict = params.get('optimizer_dict', None)
     previous_batch_layer_data = params.get('previous_batch_layer_data', None)
     previous_forward_pass_instance = params.get('previous_forward_pass', None)
+    device = params.get("device", "cpu")
 
     if isinstance(X, dict):
         X = X['result']
     if isinstance(X, list) or isinstance(X, np.ndarray):
         X = torch.tensor(X)
 
+    X = X.to(device=device)
+
     if previous_forward_pass_instance is not None:
         bn = previous_forward_pass_instance['instance']
         optimizer = previous_forward_pass_instance['optimizer']
+        bn.to(device = device)
         if not training:
             bn.eval()
         result = bn(X.type(torch.float32))
@@ -139,9 +159,9 @@ def forward_pass_batchnorm1d(X, params=None):
             if initial_running_var is not None:
                 bn.running_var.data = torch.tensor(initial_running_var, dtype=torch.float32)
 
+        bn.to(device=device)
         if not training:
             bn.eval()
-        
         if optimizer_dict is not None:
             optimizer = get_optimizer(bn, **optimizer_dict)
 
@@ -166,15 +186,19 @@ def forward_pass_batchnorm2d(X, params=None):
     optimizer_dict = params.get('optimizer_dict', None)
     previous_batch_layer_data = params.get('previous_batch_layer_data', None)
     previous_forward_pass_instance = params.get('previous_forward_pass', None)
+    device = params.get("device", "cpu")
 
     if isinstance(X, dict):
         X = X['result']
     if isinstance(X, list) or isinstance(X, np.ndarray):
         X = torch.tensor(X)
 
+    X = X.to(device=device)
+
     if previous_forward_pass_instance is not None:
         bn = previous_forward_pass_instance['instance']
         optimizer = previous_forward_pass_instance['optimizer']
+        bn.to(device = device)
         if not training:
             bn.eval()
         result = bn(X.type(torch.float32))
@@ -199,6 +223,7 @@ def forward_pass_batchnorm2d(X, params=None):
             if initial_running_var is not None:
                 bn.running_var.data = torch.tensor(initial_running_var, dtype=torch.float32)
 
+        bn.to(device = device)
         if not training:
             bn.eval()
         if optimizer_dict is not None:
@@ -221,15 +246,19 @@ def forward_pass_layernorm(X, params=None):
     optimizer_dict = params.get('optimizer_dict', None)
     previous_batch_layer_data = params.get('previous_batch_layer_data', None)    
     previous_forward_pass_instance = params.get('previous_forward_pass', None)
+    device = params.get("device", "cpu")
 
     if isinstance(X, dict):
         X = X['result']
     if isinstance(X, list) or isinstance(X, np.ndarray):
         X = torch.tensor(X)
 
+    X = X.to(device=device)
+
     if previous_forward_pass_instance is not None:
         ln = previous_forward_pass_instance['instance']
         optimizer = previous_forward_pass_instance['optimizer']
+        ln.to(device = device)
         if not training:
             ln.eval()
         result = ln(X.type(torch.float32))
@@ -250,9 +279,9 @@ def forward_pass_layernorm(X, params=None):
             if initial_w0 is not None:
                 ln.bias.data = torch.tensor(initial_w0, dtype=torch.float32)
 
+        ln.to(device = device)
         if not training:
             ln.eval()
-
         if optimizer_dict is not None:
             optimizer = get_optimizer(ln, **optimizer_dict)
 
@@ -269,14 +298,18 @@ def forward_pass_dropout(X, params=None):
     training = params.get('training',None)    
     previous_batch_layer_data = params.get('previous_batch_layer_data', None)
     previous_forward_pass_instance = params.get('previous_forward_pass', None)
+    device = params.get("device", "cpu")
 
     if isinstance(X, dict):
         X = X['result']
     if isinstance(X, list) or isinstance(X, np.ndarray):
         X = torch.tensor(X)
 
+    X = X.to(device=device)
+
     if previous_forward_pass_instance is not None:
         drp = previous_forward_pass_instance['instance']
+        drp.to(device = device)
         if not training:
             drp.eval()
         result = drp(X.type(torch.float32))
@@ -289,6 +322,7 @@ def forward_pass_dropout(X, params=None):
             drp = previous_batch_layer_data['instance']
         else:
             drp = torch.nn.Dropout(p=p)
+        drp.to(device = device)
         if not training:
             drp.eval()
         result = drp(X.type(torch.float32))
@@ -303,14 +337,18 @@ def forward_pass_activation(X, params=None):
     training = params.get('training',None)    
     previous_batch_layer_data = params.get('previous_batch_layer_data', None)
     previous_forward_pass_instance = params.get('previous_forward_pass', None)
+    device = params.get("device", "cpu")
 
     if isinstance(X, dict):
         X = X['result']
     if isinstance(X, list) or isinstance(X, np.ndarray):
         X = torch.tensor(X)
+    
+    X = X.to(device=device)
 
     if previous_forward_pass_instance is not None:
         act = previous_forward_pass_instance['instance']
+        act.to(device = device)
         result = act(X.type(torch.float32))
         forward_pass_output = {
             'result': result
@@ -321,6 +359,7 @@ def forward_pass_activation(X, params=None):
             act = previous_batch_layer_data['instance']
         else:
             act = get_activation_layer(act_data['name'])
+        act.to(device = device)
         result = act(X.type(torch.float32))
         forward_pass_output = {
             'result': result,
@@ -343,6 +382,7 @@ def forward_pass_conv2d(X, params=None):
     optimizer_dict = params.get('optimizer_dict', None)
     previous_batch_layer_data = params.get('previous_batch_layer_data', None)    
     previous_forward_pass_instance = params.get('previous_forward_pass', None)
+    device = params.get("device", "cpu")
 
     if isinstance(X, dict):
         X = X['result']
@@ -352,7 +392,8 @@ def forward_pass_conv2d(X, params=None):
     if previous_forward_pass_instance is not None:
         conv2d = previous_forward_pass_instance['instance']
         optimizer = previous_forward_pass_instance['optimizer']
-        X1 = X.to(torch.float32)
+        X1 = X.to(torch.float32,device=device)
+        conv2d.to(device)
         result = conv2d(X1)
         forward_pass_output = {
             'result': result
@@ -370,11 +411,11 @@ def forward_pass_conv2d(X, params=None):
                 conv2d.weight.data = torch.tensor(initial_W, dtype=torch.float32)
             if initial_w0 is not None:
                 conv2d.bias.data = torch.tensor(initial_w0, dtype=torch.float32)
-        
+        conv2d.to(device)
         if optimizer_dict is not None:
             optimizer = get_optimizer(conv2d, **optimizer_dict)
 
-        X1 = X.to(torch.float32)
+        X1 = X.to(torch.float32,device=device)
         result = conv2d(X1)
         forward_pass_output = {
             'result': result,
@@ -392,14 +433,18 @@ def forward_pass_maxpool2d(X, params=None):
     ceil_mode = params.get('ceil_mode', False)
     previous_batch_layer_data = params.get('previous_batch_layer_data', None)
     previous_forward_pass_instance = params.get('previous_forward_pass', None)
+    device = params.get("device", "cpu")
 
     if isinstance(X, dict):
         X = X['result']
     if isinstance(X, list) or isinstance(X, np.ndarray):
         X = torch.tensor(X)
 
+    X = X.to(device=device)
+
     if previous_forward_pass_instance is not None:
         maxpool2d = previous_forward_pass_instance['instance']
+        maxpool2d.to(device = device)
         result = maxpool2d(X.type(torch.float32))
         forward_pass_output = {
             'result': result
@@ -410,6 +455,7 @@ def forward_pass_maxpool2d(X, params=None):
             maxpool2d = previous_batch_layer_data['instance']
         else:
             maxpool2d = torch.nn.MaxPool2d(kernel_size=kernel_size, stride=stride, padding=padding, dilation=dilation, return_indices=return_indices, ceil_mode=ceil_mode)
+        maxpool2d.to(device = device)
         result = maxpool2d(X.type(torch.float32))
         forward_pass_output = {
             'result': result,
@@ -420,11 +466,15 @@ def forward_pass_maxpool2d(X, params=None):
 def forward_pass_flatten(X, params=None):
     start_dim = params.get('start_dim', 1)
     end_dim = params.get('end_dim', -1)
+    device = params.get("device", "cpu")
+
     if isinstance(X, dict):
         X = X['result']
     if isinstance(X, list) or isinstance(X, np.ndarray):
         X = torch.tensor(X)
-    
+
+    X = X.to(device=device)
+
     result = torch.flatten(X, start_dim=start_dim, end_dim=end_dim)
     forward_pass_output = {
         'result': result
@@ -435,6 +485,7 @@ def forward_pass_concat(x1,x2, params=None):
     pass
 
 def forward_pass_add(x1,x2, params=None):
+    device = params.get("device", "cpu")
     
     if isinstance(x1, dict):
         x1 = x1['result']
@@ -445,6 +496,9 @@ def forward_pass_add(x1,x2, params=None):
     if isinstance(x2, list) or isinstance(x2, np.ndarray):
         x2 = torch.tensor(x2)
 
+    x1 = x1.to(device=device)
+    x2 = x2.to(device=device)
+
     result = x1 + x2
     forward_pass_output = {
         'result': result
@@ -452,23 +506,28 @@ def forward_pass_add(x1,x2, params=None):
     return forward_pass_output
   
 def forward_pass_subtract(x1,x2, params=None):
+    device = params.get("device", "cpu")
 
     if isinstance(x1, dict):
-        x1 = np.array(x1['result'])
-    else:
-        x1 = np.array(x1)
+        x1 = x1['result']
+    if isinstance(x1, list) or isinstance(x1, np.ndarray):
+        x1 = torch.tensor(x1)
     if isinstance(x2, dict):
-        x2 = np.array(x2['result'])
-    else:
-        x2 = np.array(x2)
+        x2 = x2['result']
+    if isinstance(x2, list) or isinstance(x2, np.ndarray):
+        x2 = torch.tensor(x2)
     
-    result = np.subtract(x1,x2)
+    x1 = x1.to(device=device)
+    x2 = x2.to(device=device)
+
+    result = x1 - x2
     forward_pass_output = {
         'result': result.tolist()
     }
     return forward_pass_output
 
 def forward_pass_dot(x1,x2, params=None):
+    device = params.get("device", "cpu")
     
     if isinstance(x1, dict):
         x1 = x1['result']
@@ -483,6 +542,9 @@ def forward_pass_dot(x1,x2, params=None):
     if isinstance(x2, torch.Tensor):
         x2 = x2
 
+    x1 = x1.to(device=device)
+    x2 = x2.to(device=device)
+
     result = x1 @ x2
     forward_pass_output = {
         'result': result
@@ -493,6 +555,7 @@ def forward_pass_dot(x1,x2, params=None):
 def forward_pass_reshape(X, params=None):
     shape = params.get('shape', None)
     contiguous = params.get('contiguous', False)
+    device = params.get("device", "cpu")
     
     if isinstance(X, dict):
         X = X['result']
@@ -500,6 +563,8 @@ def forward_pass_reshape(X, params=None):
         X = torch.tensor(X)
     if isinstance(X, torch.Tensor):
         X = X
+
+    X = X.to(device=device)
 
     if contiguous:
         result = X.contiguous().view(*shape)
@@ -512,6 +577,7 @@ def forward_pass_reshape(X, params=None):
 
 def forward_pass_transpose(X, params=None):
     axes = params.get('axes', None)
+    device = params.get("device", "cpu")
     
     if isinstance(X, dict):
         X = X['result']
@@ -519,6 +585,8 @@ def forward_pass_transpose(X, params=None):
         X = torch.tensor(X)
     if isinstance(X, torch.Tensor):
         X = X
+
+    X = X.to(device=device)
 
     result = X.transpose(*axes)
     forward_pass_output = {
@@ -528,6 +596,7 @@ def forward_pass_transpose(X, params=None):
 
 def forward_pass_power(X, params=None):
     power = params.get('power', None)
+    device = params.get("device", "cpu")
     
     if isinstance(X, dict):
         X = X['result']
@@ -536,6 +605,8 @@ def forward_pass_power(X, params=None):
     if isinstance(X, torch.Tensor):
         X = X
 
+    X = X.to(device=device)
+
     result = torch.pow(X, power)
     forward_pass_output = {
         'result': result
@@ -543,6 +614,7 @@ def forward_pass_power(X, params=None):
     return forward_pass_output
 
 def forward_pass_multiply(x1,x2, params=None):
+    device = params.get("device", "cpu")
     
     if isinstance(x1, dict):
         x1 = x1['result']
@@ -556,6 +628,9 @@ def forward_pass_multiply(x1,x2, params=None):
         x2 = torch.tensor(x2)
     if isinstance(x2, torch.Tensor):
         x2 = x2
+
+    x1 = x1.to(device=device)
+    x2 = x2.to(device=device)
 
     result = x1 * x2
     forward_pass_output = {
@@ -564,6 +639,7 @@ def forward_pass_multiply(x1,x2, params=None):
     return forward_pass_output
 
 def forward_pass_division(x1,x2, params=None):
+    device = params.get("device", "cpu")
     
     if isinstance(x1, dict):
         x1 = x1['result']
@@ -577,6 +653,9 @@ def forward_pass_division(x1,x2, params=None):
         x2 = torch.tensor(x2)
     if isinstance(x2, torch.Tensor):
         x2 = x2
+
+    x1 = x1.to(device=device)
+    x2 = x2.to(device=device)
 
     result = x1 / x2
     forward_pass_output = {
@@ -591,7 +670,7 @@ def forward_pass_embedding(X, params=None):
     optimizer_dict = params.get('optimizer_dict', None)
     previous_batch_layer_data = params.get('previous_batch_layer_data', None)    
     previous_forward_pass_instance = params.get('previous_forward_pass', None)
-
+    device = params.get("device", "cpu")
 
     if isinstance(X, dict):
         X = X['result']
@@ -600,8 +679,9 @@ def forward_pass_embedding(X, params=None):
 
     if previous_forward_pass_instance is not None:
         emb = previous_forward_pass_instance['instance']
+        emb.to(device)
         optimizer = previous_forward_pass_instance['optimizer']
-        X1 = X.to(torch.int64)
+        X1 = X.to(torch.int64, device=device)
         result = emb(X1)
         forward_pass_output = {
             'result': result
@@ -617,11 +697,11 @@ def forward_pass_embedding(X, params=None):
             emb = torch.nn.Embedding(num_embeddings=vocab_size, embedding_dim=embed_dim)
             if initial_W is not None:
                 emb.weight.data = torch.tensor(initial_W, dtype=torch.float32)
-
+        emb.to(device)
         if optimizer_dict is not None:
             optimizer = get_optimizer(emb, **optimizer_dict)
-            optimizer = torch.optim.Adam(emb.parameters(), lr=optimizer_dict['lr'], betas=optimizer_dict['betas'], eps=optimizer_dict['eps'], weight_decay=optimizer_dict['weight_decay'], amsgrad=optimizer_dict['amsgrad'])
-        
+            # optimizer = torch.optim.Adam(emb.parameters(), lr=optimizer_dict['lr'], betas=optimizer_dict['betas'], eps=optimizer_dict['eps'], weight_decay=optimizer_dict['weight_decay'], amsgrad=optimizer_dict['amsgrad'])
+        X = X.to(device=device)
         result = emb(X.type(torch.int64))
         forward_pass_output = {
             'result': result,
@@ -630,6 +710,14 @@ def forward_pass_embedding(X, params=None):
         }
         return forward_pass_output
 
+
+def get_gpu_memory():
+    command = "nvidia-smi --query-gpu=memory.free --format=csv"
+    memory_free_info = sp.check_output(command.split()).decode('ascii').split('\n')[:-1][1:]
+    memory_free_values = [int(x.split()[0]) for i, x in enumerate(memory_free_info)]
+    # memory_free_values = [psutil.virtual_memory()[3]/1000000000]
+    return memory_free_values
+
 def forward_pass(X, params=None):
     model = params.get('model', None)
     optimizer_dict = params.get('optimizer_dict', None)
@@ -637,28 +725,46 @@ def forward_pass(X, params=None):
     previous_forward_pass_instance = params.get('previous_forward_pass', None)
     model_jit = params.get('model_jit', None)
     training = params.get('training',True)
+    device = params.get("device", "cpu")
 
-    temp_params = params
-    essential_keys = ['model', 'optimizer_dict', 'previous_batch_layer_data', 'previous_forward_pass', 'model_jit', 'training']
+    essential_keys = ['model', 'optimizer_dict', 'previous_batch_layer_data', 'previous_forward_pass', 'model_jit', 'training', 'device']
     for key in essential_keys:
-        if key in temp_params.keys():
-            del temp_params[key]
+        if key in params.keys():
+            del params[key]
 
-    for key, val in temp_params.items():
+    for key, val in params.items():
         if isinstance(val, list) or isinstance(val, np.ndarray):
-            temp_params[key] = torch.tensor(val)
+            params[key] = torch.tensor(val).to(device)
 
     if isinstance(X, dict):
         X = X['result']
     if isinstance(X, list) or isinstance(X, np.ndarray):
         X = torch.tensor(X)
+    # if X.get_device() == -1 and device != "cpu":
+    X = X.to(device=device)
+
+    if 'cuda' in str(device):
+        torch.cuda.synchronize()
+
     if previous_forward_pass_instance is not None:
         model = previous_forward_pass_instance['instance']
         # optimizer = previous_forward_pass_instance['optimizer']
-        X1 = X#.to(torch.float32)
+        # X1 = X.to(device=device)#.to(torch.float32)
+        t1 = time.time()
+        # if not next(model.parameters()).is_cuda and device != "cpu":
+        model.to(device=device)
+
+        if 'cuda' in str(device):
+            torch.cuda.synchronize()
+
+        t2 = time.time()
+        # print("Time taken to move model to device: ", t2-t1)
         if not training:
             model.eval()
-        result = model(X1, **temp_params)
+        t1 = time.time()
+        result = model(X, **params)
+        t2 = time.time()
+        # print("Time taken to call moodel: ", t2-t1)
         forward_pass_output = {
             'result': result
         }
@@ -669,18 +775,22 @@ def forward_pass(X, params=None):
             model = model_jit #previous_batch_layer_data['instance']
             if 'optimizer' in previous_batch_layer_data:
                 optimizer = previous_batch_layer_data['optimizer']
-        elif model is not None:
-            model = model
+
+        # if not next(model.parameters()).is_cuda and device != "cpu":
+        model.to(device=device)
+
+        if 'cuda' in str(device):
+            torch.cuda.synchronize()
 
         if optimizer_dict is not None:
             optimizer = get_optimizer(model, **optimizer_dict)
         
-        X1 = X#.to(torch.double)
+        # X1 = X.to(device=device)#.to(torch.double)
 
         if not training:
             # print("\n Eval mode set")
             model.eval()
-        result = model(X1, **temp_params)
+        result = model(X, **params)
 
         forward_pass_output = {
             'result': result,

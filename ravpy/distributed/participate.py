@@ -1,19 +1,20 @@
 import os
 
 from ..globals import g
-from ..utils import initialize_ftp_client
+from ..initialize import initialize
+import asyncio
+import threading
 
+def participate(token=None,graph_id=None):
+    from .evaluate import compute_thread
 
-def participate(graph_id=None):
-    # Initialize and create FTP client
-    res = initialize_ftp_client()
-    if res is None:
-        os._exit(1)
+    def compute_callback():
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(compute_thread())
+        loop.close()
+    
+    _thread = threading.Thread(target=compute_callback)
+    _thread.start()
 
-    from .benchmarking import benchmark_model
-    benchmark_model(seed=123, graph_id=graph_id)
-
-    g.logger.debug("")
-    g.logger.debug("Ravpy is waiting for ops and subgraphs...")
-    g.logger.debug("Warning: Do not close this terminal if you like to "
-                   "keep participating and keep earning Raven tokens\n")
+    asyncio.run(initialize(token, graph_id))

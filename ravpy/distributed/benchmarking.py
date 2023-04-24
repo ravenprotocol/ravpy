@@ -10,11 +10,10 @@ from .evaluate import waitInterval
 from ..globals import g
 from ..utils import setTimeout, get_total_RAM, check_gpu
 
-def benchmark_model(seed, graph_id=None):
+async def benchmark_model(seed, graph_id=None):
     g.logger.debug("")
     g.logger.debug("Starting Model benchmarking...")
 
-    client = g.client
     initialTimeout = g.initialTimeout
 
     random.seed(seed)
@@ -65,10 +64,12 @@ def benchmark_model(seed, graph_id=None):
         'download_speed': g.download_speed,
         'total_RAM': get_total_RAM(),
         'gpu_available': check_gpu(),
+        'client_sid': g.client.get_sid(namespace='/client')
     }
 
-    client.emit("benchmark_callback", data=json.dumps(benchmark_data), namespace="/client")
-    client.sleep(1)
+    g.logger.debug("Emitting Benchmarking Data: {}".format(benchmark_data))
+    await g.client.emit("benchmark_callback", data=json.dumps(benchmark_data), namespace="/comm")
+    await g.client.sleep(1)
     g.logger.debug("Benchmarking Complete!")
 
     setTimeout(waitInterval, initialTimeout)

@@ -5,7 +5,6 @@ import speedtest
 import time
 import torch
 import psutil
-import GPUtil
 
 from .config import ENCRYPTION, RAVENVERSE_FTP_URL, RAVENAUTH_TOKEN_VERIFY_URL
 
@@ -42,7 +41,7 @@ def isLatestVersion(pkgName):
     latest_version = data['info']['version']
     # print(‘Current version of ‘+pkgName+’ is ’+current_version)
     # print(‘Latest version of ‘+pkgName+’ is ’+latest_version)
-    return latest_version <= current_version
+    return latest_version == current_version
 
 def download_file(url, file_name):
     g.logger.debug("Downloading benchmark data")
@@ -130,8 +129,8 @@ def get_federated_graph(graph_id):
 
 def list_graphs(approach="distributed"):
     # Get graphs
-    headers = {"token": g.ravenverse_token}
-    r = requests.get(url="{}/graph/get/all/?approach={}".format(RAVENVERSE_URL, approach), headers=headers)
+    # headers = {"token": token}
+    r = requests.get(url="{}/graph/get/all/?approach={}".format(RAVENVERSE_URL, approach))#, headers=headers)
     if r.status_code != 200:
         return None
 
@@ -141,7 +140,6 @@ def list_graphs(approach="distributed"):
 
     for graph in graphs:
         sys_reqs = ast.literal_eval(graph['system_requirements'])
-        del sys_reqs['gpu_required']
         sys_reqs['total_RAM'] = str(sys_reqs['total_RAM']) + ' GB'
         sys_reqs['upload_speed'] = str(round(sys_reqs['upload_speed']) * 1e-6) + " Mbps"
         sys_reqs['download_speed'] = str(round(sys_reqs['download_speed']) * 1e-6) + " Mbps"
@@ -214,6 +212,18 @@ def dump_data(op_id, value):
     Dump ndarray to file
     """
     file_path = os.path.join(FTP_TEMP_FILES_FOLDER, "temp_{}.pkl".format(op_id))
+    if os.path.exists(file_path):
+        os.remove(file_path)
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    with open(file_path, 'wb') as f:
+        pkl.dump(value, f, protocol=pkl.HIGHEST_PROTOCOL)
+    return file_path
+
+def dump_result_data(op_id, value):
+    """
+    Dump ndarray to file
+    """
+    file_path = os.path.join(FTP_TEMP_FILES_FOLDER, "temp_result_{}.pkl".format(op_id))
     if os.path.exists(file_path):
         os.remove(file_path)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)

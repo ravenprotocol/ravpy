@@ -4,7 +4,7 @@ from .config import RAVENVERSE_URL, TYPE, RAVENVERSE_FTP_URL, FTP_TEMP_FILES_FOL
 from .logger import get_logger
 from .singleton_utils import Singleton
 
-def exit_handler():
+async def exit_handler():
     g.logger.debug('Application is Closing!')
     if g.client is not None:
         g.logger.debug("Disconnecting...")
@@ -16,7 +16,7 @@ def exit_handler():
         for f in os.listdir(dir):
             os.remove(os.path.join(dir, f))
 
-def get_client(ravenverse_token):
+def get_client():
     """
     Connect to Ravebverse and return socket client instance
     :param ravenverse_token: authentication token
@@ -24,36 +24,21 @@ def get_client(ravenverse_token):
     """
     g.logger.debug("Connecting to Ravenverse...")
 
-    auth_headers = {"token": ravenverse_token}
-    client = socketio.Client(logger=False, request_timeout=100, engineio_logger=False)
+    client = socketio.AsyncClient(logger=False, request_timeout=100, engineio_logger=False)
 
     @client.on('error', namespace='/client')
-    def check_error(d):
+    async def check_error(d):
         g.logger.error("Connection error:a{}".format(d))
-        client.disconnect()
+        await client.disconnect()
         os._exit(1)
 
     @client.on('invalid_graph', namespace='/client')
-    def invalid_graph(d):
+    async def invalid_graph(d):
         g.logger.error("Invalid Graph error:{}".format(d))
-        exit_handler()
+        await exit_handler()
         os._exit(1)
 
-    try:
-        g.logger.debug("Ravenverse url: {}?type={}".format(RAVENVERSE_URL, TYPE))
-        g.logger.debug("Ravenverse FTP host: {}".format(RAVENVERSE_FTP_URL))
-        client.connect(url="{}?type={}".format(RAVENVERSE_URL, TYPE),
-                       auth=auth_headers,
-                       transports=['websocket'],
-                       namespaces=['/client'], wait_timeout=100)
-        g.logger.debug("Successfully connected to Ravenverse")
-        return client
-    except Exception as e:
-        g.logger.error("Error: Unable to connect to Ravenverse. "
-                       "Make sure you are using the right hostname and port. \n{}".format(e))
-        client.disconnect()
-        os._exit(1)
-
+    return client
 
 @Singleton
 class Globals(object):
@@ -63,7 +48,7 @@ class Globals(object):
         self._ops = {}
         self._opTimeout = 300#5000
         self._initialTimeout = 100
-        self._outputs = {}
+        self._param_queue = {}
         self._ftp_client = None
         self._delete_files_list = []
         self._has_subgraph = False
@@ -79,8 +64,6 @@ class Globals(object):
         self._ravenverse_token = None
         self._logger = get_logger()
         self._dashboard_data = [['Subgraph ID', 'Graph ID', 'Status']]
-        self._forward_computations = {}
-        self._grad_tensors = {}
 
     @property
     def timeoutId(self):
@@ -99,8 +82,12 @@ class Globals(object):
         return self._initialTimeout
 
     @property
-    def outputs(self):
-        return self._outputs
+    def param_queue(self):
+        return self._param_queue
+    
+    @param_queue.setter
+    def param_queue(self, param_queue):
+        self._param_queue = param_queue
 
     @property
     def ftp_upload_blocksize(self):
@@ -143,8 +130,24 @@ class Globals(object):
         if self._client is not None:
             return self._client
         if self._client is None:
-            self._client = get_client(self._ravenverse_token)
+            self._client = get_client()
             return self._client
+
+    async def connect(self):
+        try:
+            g.logger.debug("Ravenverse url: {}?type={}".format(RAVENVERSE_URL, TYPE))
+            g.logger.debug("Ravenverse FTP host: {}".format(RAVENVERSE_FTP_URL))
+            auth_headers = {"token": self._ravenverse_token}
+            await self._client.connect(url="{}?type={}".format(RAVENVERSE_URL, TYPE),
+                        auth=auth_headers,
+                        namespaces=['/client','/comm'],
+                        transports=['websocket'], wait_timeout=100)
+            g.logger.debug("Successfully connected to Ravenverse")
+        except Exception as e:
+            g.logger.error("Error: Unable to connect to Ravenverse. "
+                        "Make sure you are using the right hostname and port. \n{}".format(e))
+            await self._client.disconnect()
+            os._exit(1)
 
     @property
     def ftp_client(self):
@@ -202,10 +205,6 @@ class Globals(object):
     def ping_timeout_counter(self, ping_timeout_counter):
         self._ping_timeout_counter = ping_timeout_counter
 
-    @outputs.setter
-    def outputs(self, outputs):
-        self._outputs = outputs
-
     @property
     def error(self):
         return self._error
@@ -233,22 +232,6 @@ class Globals(object):
     @dashboard_data.setter
     def dashboard_data(self, dashboard_data):
         self._dashboard_data = dashboard_data
-
-    @property
-    def forward_computations(self):
-        return self._forward_computations
-
-    @forward_computations.setter
-    def forward_computations(self, forward_computations):
-        self._forward_computations = forward_computations
-
-    @property
-    def grad_tensors(self):
-        return self._grad_tensors
-
-    @grad_tensors.setter
-    def grad_tensors(self, grad_tensors):
-        self._grad_tensors = grad_tensors
 
 
 g = Globals.Instance()
