@@ -284,14 +284,7 @@ async def subgraph_forward_process(d):
                 elif isinstance(v, torch.nn.Module):
                     model_key = key
                     model_k = k
-                    with open('log.txt', 'a') as f:
-                        f.write("\nModel op: "+str(key) + " Key: " + str(k))
-        elif isinstance(val, torch.nn.Module):
-            with open('log.txt', 'a') as f:
-                f.write("\nModel op: "+str(key))
         
-        # g.forward_computations[key] = None
-
     if model_key is not None and model_k is not None:
         del forward_computations[model_key][model_k]
 
