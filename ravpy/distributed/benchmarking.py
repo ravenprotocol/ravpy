@@ -6,7 +6,7 @@ import torch
 from torch import nn
 from collections import OrderedDict
 
-from .evaluate import waitInterval
+from .evaluate import waitInterval, get_gpu_memory
 from ..globals import g
 from ..utils import setTimeout, get_total_RAM, check_gpu
 
@@ -55,6 +55,28 @@ async def benchmark_model(seed, graph_id=None):
 
     if graph_id is None:
         graph_id = "None"
+    
+    try:
+        total_VRAM = get_gpu_memory()[0] * 1e-3
+        if total_VRAM <= 2:
+            total_VRAM = 2
+        elif total_VRAM > 2 and total_VRAM <= 4:
+            total_VRAM = 4
+        elif total_VRAM > 4 and total_VRAM <= 6:
+            total_VRAM = 6
+        elif total_VRAM > 6 and total_VRAM <= 8:
+            total_VRAM = 8
+        elif total_VRAM > 8 and total_VRAM <= 12:
+            total_VRAM = 12 
+        elif total_VRAM > 12 and total_VRAM <= 16:
+            total_VRAM = 16
+        elif total_VRAM > 16 and total_VRAM <= 24:
+            total_VRAM = 24
+        elif total_VRAM > 24 and total_VRAM <= 32:
+            total_VRAM = 32
+            
+    except Exception as e:
+        total_VRAM = 0
 
     benchmark_result = {'stake':1/t}
     benchmark_data = {
@@ -63,6 +85,7 @@ async def benchmark_model(seed, graph_id=None):
         'upload_speed': g.upload_speed,
         'download_speed': g.download_speed,
         'total_RAM': get_total_RAM(),
+        'total_VRAM': total_VRAM,
         'gpu_available': check_gpu(),
         'client_sid': g.client.get_sid(namespace='/client')
     }
