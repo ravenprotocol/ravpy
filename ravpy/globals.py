@@ -64,6 +64,7 @@ class Globals(object):
         self._ravenverse_token = None
         self._logger = get_logger()
         self._dashboard_data = [['Subgraph ID', 'Graph ID', 'Status']]
+        self._forward_computations = {}
 
     @property
     def timeoutId(self):
@@ -232,6 +233,14 @@ class Globals(object):
     @dashboard_data.setter
     def dashboard_data(self, dashboard_data):
         self._dashboard_data = dashboard_data
+
+    @property
+    def forward_computations(self):
+        return self._forward_computations
+
+    @forward_computations.setter
+    def forward_computations(self, forward_computations):
+        self._forward_computations = forward_computations
 
 
 g = Globals.Instance()

@@ -35,7 +35,7 @@ async def benchmark_model(seed, graph_id=None):
     l1.append(('fin_lin', nn.Linear(height*width*out_channels_1st_layer,target_shape)))
     l1.append(('relu2', nn.ReLU()))
 
-    print(OrderedDict(l1))
+    # print(OrderedDict(l1))
 
     model = nn.Sequential(OrderedDict(l1))
     model.to(device=device)
