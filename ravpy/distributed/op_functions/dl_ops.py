@@ -750,21 +750,15 @@ def forward_pass(X, params=None):
         model = previous_forward_pass_instance['instance']
         # optimizer = previous_forward_pass_instance['optimizer']
         # X1 = X.to(device=device)#.to(torch.float32)
-        t1 = time.time()
         # if not next(model.parameters()).is_cuda and device != "cpu":
         model.to(device=device)
 
         if 'cuda' in str(device):
             torch.cuda.synchronize()
 
-        t2 = time.time()
-        # print("Time taken to move model to device: ", t2-t1)
         if not training:
             model.eval()
-        t1 = time.time()
         result = model(X, **params)
-        t2 = time.time()
-        # print("Time taken to call moodel: ", t2-t1)
         forward_pass_output = {
             'result': result
         }
