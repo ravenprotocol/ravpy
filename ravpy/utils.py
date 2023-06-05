@@ -7,15 +7,11 @@ import psutil
 
 from .config import ENCRYPTION, RAVENAUTH_TOKEN_VERIFY_URL
 
-if ENCRYPTION:
-    import tenseal as ts
-
 from .ftp import get_client as get_ftp_client
 import shutil
 import numpy as np
 import requests
 from terminaltables import AsciiTable
-from .config import ENCRYPTION
 
 if ENCRYPTION:
     import tenseal as ts

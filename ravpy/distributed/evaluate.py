@@ -149,7 +149,7 @@ async def subgraph_forward_process(d):
             continue
 
         if operation_type is not None and operator is not None:
-            result_payload = compute_locally(payload=index, subgraph_id=subgraph_id, graph_id=graph_id, to_upload=to_upload, gpu_required = gpu_required)
+            result_payload = await compute_locally(payload=index, subgraph_id=subgraph_id, graph_id=graph_id, to_upload=to_upload, gpu_required = gpu_required)
             if not g.error:
                 if result_payload is not None:
                     results.append(result_payload)
@@ -316,9 +316,14 @@ async def redundant_subgraph(d):
 
 @g.client.on('share_completed', namespace="/client")
 async def share_completed(d):
-    print("You have computed your share of subgraphs for this Graph, disconnecting...")
-    await exit_handler()
-    os._exit(1)
+    if d.get('message', None) is not None:
+        print(d['message'])
+        await exit_handler()
+        os._exit(1)
+    else:
+        print("You have computed your share of subgraphs for this Graph, disconnecting...")
+        await exit_handler()
+        os._exit(1)
 
 
 def waitInterval():
