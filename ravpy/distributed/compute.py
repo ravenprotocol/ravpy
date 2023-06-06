@@ -12,7 +12,7 @@ from ..utils import get_key, load_data, load_data_raw
 from .op_functions import *
 
 # async
-def compute_locally(payload, subgraph_id, graph_id, to_upload=False, gpu_required=False):
+async def compute_locally(payload, subgraph_id, graph_id, to_upload=False, gpu_required=False):
     try:
         values = []
         for i in range(len(payload["values"])):
@@ -77,7 +77,7 @@ def compute_locally(payload, subgraph_id, graph_id, to_upload=False, gpu_require
                         model_download_path = os.path.join(FTP_DOWNLOAD_FILES_FOLDER,
                                                         os.path.basename(params[i]['model_path']))
                         params_dict['model_jit'] = torch.jit.load(model_download_path, map_location=device, _restore_shapes=True)
-        
+
                 continue
 
             if i == "model":
@@ -101,7 +101,7 @@ def compute_locally(payload, subgraph_id, graph_id, to_upload=False, gpu_require
                     download_path = os.path.join(FTP_DOWNLOAD_FILES_FOLDER,
                                                     os.path.basename(params[i]["path"]))
                     param_value = load_data(download_path).tolist()
-                
+
                 params_dict[i] = param_value
                 del param_value
 
@@ -144,10 +144,12 @@ def compute_locally(payload, subgraph_id, graph_id, to_upload=False, gpu_require
         g.dashboard_data[-1][2] = "Failed"
         print(AsciiTable([['Provider Dashboard']]).table)
         print(AsciiTable(g.dashboard_data).table)
-        emit_error(payload, error, subgraph_id, graph_id)
+        await emit_error(payload, error, subgraph_id, graph_id)
         if 'broken pipe' in str(error).lower() or '421' in str(error).lower():
             print('\n\nYou have encountered an IO based Broken Pipe Error. \nRestart terminal and try connecting again')
             sys.exit()
+        
+        return None
 
 
 def  get_unary_result(value1, params, operator):
@@ -394,12 +396,12 @@ def get_binary_result(value1, value2, params, operator):
     return result
 
 
-def emit_error(payload, error, subgraph_id, graph_id):
+async def emit_error(payload, error, subgraph_id, graph_id):
     print("Emit Error")
     g.error = True
     error = str(error)
     client = g.client
-    client.emit("error_handler", json.dumps({
+    await client.emit("error_handler", json.dumps({
         'op_type': payload["op_type"],
         'error': error,
         'operator': payload["operator"],
